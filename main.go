@@ -9,21 +9,21 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+var db *sql.DB
+
 func main() {
-	db, err := sql.Open("sqlite3", "app.db")
+	var err error
+	db, err = sql.Open("sqlite3", "app.db")
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 	defer db.Close()
 	
-	tx, _ := db.Begin()
-	stmt, _ := tx.Prepare("INSERT INTO langs_dim(id, name) VALUES(?, ?)")
-	defer stmt.Close()
+	fmt.Println("listening...")
 
-	_, err = stmt.Exec("ua", "Ukrainian")
-	_, err = stmt.Exec("la", "Latin")
+	http.HandleFunc("/", handleIndex)
 
-	tx.Commit()
 
 	rows, _ := db.Query("SELECT * FROM langs_dim")
 	defer rows.Close()
@@ -34,13 +34,11 @@ func main() {
 		fmt.Println(id, "-", name)
 	}
 
-	fmt.Println("hello world")
+	log.Fatal(http.ListenAndServe(":6969", nil))
+}
 	
-	h1 := func(w http.ResponseWriter, r *http.Request){
+func handleIndex(w http.ResponseWriter, r *http.Request) {
 		temp := template.Must(template.ParseFiles("html/index.html"))
 		temp.Execute(w, nil)
 	}
-	http.HandleFunc("/", h1)
-	
-	log.Fatal(http.ListenAndServe(":6942", nil))
 }

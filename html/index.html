@@ -1,1 +1,74 @@
-<h1>Hello world</h1>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+    <title>Liberrina - Lean a Language by Reading in it</title>
+    <script src="https://unpkg.com/htmx.org@1.9.3"
+            integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua"
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet"
+          href="https://necolas.github.io/normalize.css/8.0.1/normalize.css">
+</head>
+
+<style>
+    .container {
+        display: flex;
+        max-width: 900px;
+        margin: auto;
+    }
+
+    .container section {
+        width: 50%;
+        max-width: 500px;
+    }
+
+    section h3 {
+        margin: 15px 0 0;
+        display: inline-block;
+    }
+
+    section ul {
+        padding: 0;
+    }
+
+    section li {
+        margin-top: 10px;
+    }
+</style>
+
+<body>
+    <div class="container">
+        <section>
+            <h3>Texts</h3>
+            <a href="/add-text"><button><small>Add text</small></button><a>
+                    <ul>
+                        <li>Text 1</li>
+                        <li>Text 2</li>
+                        <li>Text 3</li>
+                        <li>Text 1</li>
+                        <li>Text 2</li>
+                        <li>Text 3</li>
+                        <li>Text 1</li>
+                        <li>Text 2</li>
+                        <li>Text 3</li>
+                    </ul>
+        </section>
+        <section>
+            <h3>Languages</h3>
+            <a href="/add-lang"><button><small>Add language</small></button><a>
+                    <ul>
+                        <li>Language 1</li>
+                        <li>Language 2</li>
+                    </ul>
+        </section>
+    </div>
+    <nav>
+        <div>
+        </div>
+    </nav>
+</body>
+
+</html>
