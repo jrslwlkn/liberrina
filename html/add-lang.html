@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+    <title>Liberrina - Lean a Language by Reading in it</title>
+    <script src="https://unpkg.com/htmx.org@1.9.3"
+            integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua"
+            crossorigin="anonymous"></script>
+</head>
+<style>
+    form {
+        margin: 20px;
+    }
+
+    fieldset {
+        margin: auto;
+    }
+
+    fieldset {
+        max-width: 500px;
+    }
+
+    .field {
+        margin: 10px;
+    }
+
+    .field input,
+    .field select {
+        float: right;
+    }
+
+    button[type=submit] {
+        margin: 10px 0 0 0;
+        width: 100%;
+    }
+</style>
+
+<body>
+    <form hx-post="/add-lang"
+          hx-swap="innerHTML"
+          hx-target="fieldset">
+        <fieldset>
+            <legend><strong>Add new language</strong></legend>
+            <div class="field">
+                <label for="name">Language name (label): </label>
+                <input type="text"
+                       name="name"
+                       required>
+            </div>
+            <div class="field">
+                <label for="from_id">Study language: </label>
+                <select name="from_id"
+                        required>
+                    <option value>Select one...</option>
+                    {{range .}}
+                    <option value="{{.Id}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="field">
+                <label for="to_id">Your language: </label>
+                <select name="to_id"
+                        required>
+                    <option value>Select one...</option>
+                    {{range .}}
+                    <option value="{{.Id}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="field">
+                <label for="quick_lookup_uri">Quick term lookup URI: </label>
+                <input type="text"
+                       name="quick_lookup_uri"
+                       required>
+            </div>
+            <div class="field">
+                <label for="lookup_uri_1">First dictionary lookup URI: </label>
+                <input type="text"
+                       name="lookup_uri_1"
+                       required>
+            </div>
+            <div class="field">
+                <label for="lookup_uri_2">Second dictionary lookup URI: </label>
+                <input type="text"
+                       name="lookup_uri_2">
+            </div>
+            <div class="field">
+                <label for="term_sep">Word separator regex: </label>
+                <input type="text"
+                       name="term_sep">
+            </div>
+            <div class="field">
+                <label for="trim_pattern">Characters regex to trim in terms: </label>
+                <input type="text"
+                       name="trim_pattern">
+            </div>
+            <button type="submit">Save</button>
+        </fieldset>
+    </form>
+</body>
+
+</html>

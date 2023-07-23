@@ -13,7 +13,7 @@
 
 1. Start dev server:
     ```
-    go run main.go
+    go run *.go
     ```
 
 	
