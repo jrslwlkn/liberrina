@@ -5,10 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
-    <title>Liberrina - Lean a Language by Reading in it</title>
+    <title>Liberrina - Lean a Language by Reading In It</title>
     <script src="https://unpkg.com/htmx.org@1.9.3"
             integrity="sha384-lVb3Rd/Ca0AxaoZg5sACe8FJKF0tnUgR2Kd7ehUOG5GCcROv5uBIZsOqovBAcWua"
             crossorigin="anonymous"></script>
+    <link rel="stylesheet"
+          href="https://necolas.github.io/normalize.css/8.0.1/normalize.css">
 </head>
 <style>
     form {
@@ -16,15 +18,21 @@
     }
 
     fieldset {
-        margin: auto;
+        max-width: 500px;
+        padding: 20px;
     }
 
-    fieldset {
-        max-width: 500px;
+    legend {
+        font-size: large;
+        font-weight: bold;
     }
 
     .field {
-        margin: 10px;
+        margin: 15px 0;
+    }
+
+    #result + .field {
+        margin-top: 0;
     }
 
     .field input,
@@ -34,16 +42,25 @@
 
     button[type=submit] {
         margin: 10px 0 0 0;
+        padding: 5px;
         width: 100%;
+    }
+
+    #result.error {
+        border: 2px dotted darkred;
+        margin: 0 0 15px 0;
+        padding: 10px;
+        background: pink;
     }
 </style>
 
 <body>
     <form hx-post="/add-lang"
-          hx-swap="innerHTML"
-          hx-target="fieldset">
+          hx-swap="outerHTML"
+          hx-target="#result">
         <fieldset>
-            <legend><strong>Add new language</strong></legend>
+            <legend>Add new language</legend>
+            <div id="result"></div>
             <div class="field">
                 <label for="name">Language name (label): </label>
                 <input type="text"
@@ -88,7 +105,7 @@
                        name="lookup_uri_2">
             </div>
             <div class="field">
-                <label for="term_sep">Word separator regex: </label>
+                <label for="term_sep">Term separator regex: </label>
                 <input type="text"
                        name="term_sep">
             </div>

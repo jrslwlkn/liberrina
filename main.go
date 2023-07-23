@@ -104,10 +104,16 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			userID,
 		)
 		if err != nil {
-			w.Write([]byte("<b>Database Error</b><br><br><code>"+err.Error()+"</code>Refresh the page to try again."))
+			w.Write([]byte("<div id='result' class='field error'><b>Database Error</b><br><br><code>" + err.Error() + "</code></div>"))
 			fmt.Println("error: ", err.Error())
 		} else {
-			w.Write([]byte(`<b>✅ Success!</b></br><br>Go <a href="/">home</a>.`))
+			w.Write([]byte(`
+				<div id="result">
+					<b>✅ Success!</b></br><br>
+					Go <a href="/">home</a>.
+				</div>
+				<style> .field, button { display: none } </style>`,
+			))
 		}
 	}
 }

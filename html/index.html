@@ -15,23 +15,33 @@
 
 <style>
     .container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-gap: 40px;
+        padding: 0 20px;
+    }
+
+    @media screen and (max-width: 600px) {
+        .container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .title {
+        border-bottom: 2px dotted gray;
+        padding: 20px 0 10px;
         display: flex;
-        max-width: 900px;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .title h3 {
         margin: auto;
     }
 
-    .container section {
-        width: 50%;
-        max-width: 500px;
-    }
-
-    section h3 {
-        margin: 15px 0 0;
-        display: inline-block;
-    }
-
-    section ul {
+    ul {
         padding: 0;
+        list-style: none;
     }
 
     section li {
@@ -42,33 +52,33 @@
 <body>
     <div class="container">
         <section>
-            <h3>Texts</h3>
-            <a href="/add-text"><button><small>Add text</small></button><a>
-                    <ul>
-                        <li>Text 1</li>
-                        <li>Text 2</li>
-                        <li>Text 3</li>
-                        <li>Text 1</li>
-                        <li>Text 2</li>
-                        <li>Text 3</li>
-                        <li>Text 1</li>
-                        <li>Text 2</li>
-                        <li>Text 3</li>
-                    </ul>
+            <div class="title">
+                <h3>Texts</h3>
+                <a href="/add-text"><button><small>Add text</small></button></a>
+            </div>
+            <ul>
+                <li>Text 1</li>
+                <li>Text 2</li>
+                <li>Text 3</li>
+                <li>Text 1</li>
+                <li>Text 2</li>
+                <li>Text 3</li>
+                <li>Text 1</li>
+                <li>Text 2</li>
+                <li>Text 3</li>
+            </ul>
         </section>
         <section>
-            <h3>Languages</h3>
-            <a href="/add-lang"><button><small>Add language</small></button><a>
-                    <ul>
-                        <li>Language 1</li>
-                        <li>Language 2</li>
-                    </ul>
+            <div class="title">
+                <h3>Languages</h3>
+                <a href="/add-lang"><button><small>Add language</small></button></a>
+            </div>
+            <ul>
+                <li>Language 1</li>
+                <li>Language 2</li>
+            </ul>
         </section>
     </div>
-    <nav>
-        <div>
-        </div>
-    </nav>
 </body>
 
 </html>
