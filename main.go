@@ -32,8 +32,8 @@ func main() {
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
-	temp := template.Must(template.ParseFiles("html/index.html"))
-	temp.Execute(w, nil)
+	temp := template.Must(template.ParseFiles("html/index.html", "html/base.html"))
+	temp.ExecuteTemplate(w, "base", nil)
 }
 
 func handleAddLang(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +53,8 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			langs = append(langs, lang)
 		}
 
-		template.Must(template.ParseFiles("html/add-lang.html")).Execute(w, langs)
+		temp := template.Must(template.ParseFiles("html/add-lang.html", "html/base.html"))
+		temp.ExecuteTemplate(w, "base", langs)
 	} else if r.Method == http.MethodPost {
 		r.ParseForm()
 		form := r.Form
