@@ -16,4 +16,7 @@
     go run *.go
     ```
 
-	
+    Or use hot reloading with [entr](https://github.com/eradman/entr):
+	```
+    find . -name "*.go" | entr -r go run . 
+    ```
