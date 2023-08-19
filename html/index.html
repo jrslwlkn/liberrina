@@ -34,13 +34,28 @@
     section li {
         margin-top: 10px;
     }
+
+    a {
+        text-decoration: none;
+    }
+
+    .square-button {
+        width: 30px;           
+        height: 30px;         
+        border: none;         
+        font-size: 24px;     
+        display: flex;      
+        align-items: center;
+        justify-content: center; 
+        border-radius: 5px;   
+    }
 </style>
 
 <div class="container">
     <section>
         <div class="title">
-            <h3>Texts</h3>
-            <a href="/add-text"><button><small>Add text</small></button></a>
+            <h3>Documents</h3>
+            <a href="/add-doc"><button class="square-button">+</button></a>
         </div>
         <ul>
             <li>Text 1</li>
@@ -57,7 +72,7 @@
     <section>
         <div class="title">
             <h3>Languages</h3>
-            <a href="/add-lang"><button><small>Add language</small></button></a>
+            <a href="/add-lang"><button class="square-button">+</button></a>
         </div>
         <ul>
             <li>Language 1</li>

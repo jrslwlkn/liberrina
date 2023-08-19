@@ -17,6 +17,19 @@
 
     .field {
         margin: 15px 0;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    @media only screen and (max-width: 550px) {
+        .field, .field * {
+            display: block;
+            float: none !important;
+            width: 100%;
+        }
+        .field label {
+            margin-bottom: 5px;
+        }
     }
 
     #result+.field {
@@ -30,7 +43,7 @@
 
     button[type=submit] {
         margin: 10px 0 0 0;
-        padding: 5px;
+        padding: 10px;
         width: 100%;
     }
 
