@@ -4,23 +4,25 @@
     form {
         margin: 20px;
     }
-
     fieldset {
         max-width: 800px;
         padding: 20px;
     }
-
     legend {
         font-size: large;
         font-weight: bold;
     }
-
     .field {
         margin: 15px 0;
         display: flex;
         justify-content: space-between;
     }
-
+    .field input,
+    .field textarea,
+    .field select {
+        float: right;
+        width: 50%;
+    }
     @media only screen and (max-width: 600px) {
         .field, .field * {
             display: block;
@@ -31,29 +33,31 @@
             margin-bottom: 5px;
         }
     }
-
     #result+.field {
         margin-top: 0;
     }
-
-    .field input,
-    .field textarea,
-    .field select {
-        float: right;
-        width: 50%;
-    }
-
-    button[type=submit] {
-        margin: 10px 0 0 0;
-        padding: 10px;
-        width: 100%;
-    }
-
     #result.error {
         border: 2px dotted darkred;
         margin: 0 0 15px 0;
         padding: 10px;
         background: pink;
+    }
+    input::file-selector-button, 
+    select,
+    input,
+    textarea {
+        border: none;
+        padding: 5px;
+        border-radius: 5px;
+        background-color: #e9e9ed;
+    }
+    input[type=file] {
+        border: none;
+        background: transparent;
+        padding: 0;
+    }
+    fieldset {
+        border: 1px solid lightgrey;
     }
 </style>
 

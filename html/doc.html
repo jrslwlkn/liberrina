@@ -4,13 +4,12 @@
     #popup {
         position: absolute;
         display: none;
-        background: lightgrey;
+        background: whitesmoke;
         padding: 10px;
-        margin: 20px;
-        box-shadow: 3px 3px 10px gray;
+        margin: 0;
+        box-shadow: 3px 3px 3px lightgrey;
         border: none;
     }
-
     article {
         max-width: 800px;
         margin: 20px auto;
@@ -19,15 +18,17 @@
         cursor: default;
         padding: 0 20px;
     }
-
     nav {
         display: flex;
         margin: 20px;
         justify-content: end;
     }
-
     input[type=number] {
         width: 3rem;
+    }
+    .control {
+        border: 1px solid lightgrey;
+        padding: 5px;
     }
 </style>
 
@@ -36,7 +37,7 @@
     </dialog>
 
     <nav>
-        <div>
+        <div class="control">
             <label for="text_font_size">Font size:</label>
             <input name="text_font_size"
                    type="number"
@@ -69,13 +70,14 @@
             return;
         const newId = setTimeout(() => {
             if (popupId == newId && getSelectionString()) {
-                popup.style.left = e.pageX + 'px';
-                popup.style.top = e.pageY + 'px';
+                const { x, y } = getSelectionCoords();
+                popup.style.left = x + 'px';
+                popup.style.top = y + Number.parseInt(article.style.fontSize) + 10 + 'px';
                 popup.style.display = 'block';
                 popup.innerText = getSelectionString();
             }
             clearTimeout(newId);
-        }, 1000);
+        }, 350);
         popupId = newId;
     }
 
@@ -118,6 +120,15 @@
         if (word) {
             openPopup(e);
         }
+    }
+
+    function getSelectionCoords() {
+        const sel = window.getSelection();
+        let range = sel.getRangeAt(0).cloneRange();
+        range.collapse(true);
+        let rects = range.getClientRects();
+        let rect = rects[0];
+        return {x: rect.x, y: rect.y};
     }
 
     document.addEventListener('mouseup', openPopup);

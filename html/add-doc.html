@@ -59,6 +59,15 @@
             <input type="text"
                    name="trim_pattern">
         </div>
+        <div class="field" style="display: inline;">
+            <label for="doc_body" style="display: block;">Document body: </label>
+            <textarea oninput="this.style.height=this.scrollHeight+'px'" name="doc_body" style="display: block; resize: vertical; width: 100%; margin: 10px 0 20px;"></textarea>
+        </div>
+        <strong>OR</strong>
+        <div class="field">
+            <label for="doc_file">Document text file: </label>
+            <input type="file" accept=".txt" name="doc_file">
+        </div>
         <button type="submit">Save</button>
     </fieldset>
 </form>
