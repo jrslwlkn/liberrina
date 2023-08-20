@@ -1,0 +1,129 @@
+{{define "page"}}
+
+<style>
+    #popup {
+        position: absolute;
+        display: none;
+        background: lightgrey;
+        padding: 10px;
+        margin: 20px;
+        box-shadow: 3px 3px 10px gray;
+        border: none;
+    }
+
+    article {
+        max-width: 800px;
+        margin: 20px auto;
+        line-height: 2;
+        font-size: 1.2rem;
+        cursor: default;
+        padding: 0 20px;
+    }
+
+    nav {
+        display: flex;
+        margin: 20px;
+        justify-content: end;
+    }
+
+    input[type=number] {
+        width: 3rem;
+    }
+</style>
+
+<body>
+    <dialog id="popup">
+    </dialog>
+
+    <nav>
+        <div>
+            <label for="text_font_size">Font size:</label>
+            <input name="text_font_size"
+                   type="number"
+                   min="9"
+                   max="69"
+                   oninput="handleFontSizeChange(this.valueAsNumber)">
+        </div>
+    </nav>
+
+    <article>
+        <h3>{{.Author}}: {{.Title}}</h3>
+        <pre>{{.Body}}</pre>
+    </article>
+</body>
+
+<script>
+    let popupId = null;
+    const popup = document.getElementById("popup");
+    const textSizeInput = document.querySelector("input[name=text_font_size]");
+    const article = document.querySelector("article");
+
+    handleFontSizeChange(localStorage.getItem("text_font_size") ?? "14");
+
+    function getSelectionString() {
+        return document.getSelection().toString().trim();
+    }
+
+    function openPopup(e) {
+        if (!getSelectionString())
+            return;
+        const newId = setTimeout(() => {
+            if (popupId == newId && getSelectionString()) {
+                popup.style.left = e.pageX + 'px';
+                popup.style.top = e.pageY + 'px';
+                popup.style.display = 'block';
+                popup.innerText = getSelectionString();
+            }
+            clearTimeout(newId);
+        }, 1000);
+        popupId = newId;
+    }
+
+    function closePopup() {
+        popup.style.display = 'none';
+        return true;
+    }
+
+    function handleFontSizeChange(size) {
+        article.style.fontSize = size + "px";
+        textSizeInput.value = size;
+        localStorage.setItem("text_font_size", size);
+    }
+
+    function click2selectWord(e) {
+        if (getSelectionString()) {
+            return;
+        }
+        const selection = window.getSelection();
+        const range = selection.getRangeAt(0);
+        const node = selection.anchorNode;
+        const word_regexp = /^\w*$/; // TODO: use the value from lang_dim table
+        // Extend the range backward until it matches word beginning
+        while ((range.startOffset > 0) && range.toString().match(word_regexp)) {
+            range.setStart(node, (range.startOffset - 1));
+        }
+        // Restore the valid word match after overshooting
+        if (!range.toString().match(word_regexp)) {
+            range.setStart(node, range.startOffset + 1);
+        }
+        // Extend the range forward until it matches word ending
+        while ((range.endOffset < node.length) && range.toString().match(word_regexp)) {
+            range.setEnd(node, range.endOffset + 1);
+        }
+        // Restore the valid word match after overshooting
+        if (!range.toString().match(word_regexp)) {
+            range.setEnd(node, range.endOffset - 1);
+        }
+        var word = range.toString();
+        if (word) {
+            openPopup(e);
+        }
+    }
+
+    document.addEventListener('mouseup', openPopup);
+    document.addEventListener('keydown', e => e.key == "Escape" && closePopup() && document.getSelection().empty());
+    document.addEventListener('click', e => !popup.contains(e.target) && closePopup());
+    document.addEventListener('click', click2selectWord)
+</script>
+
+{{end}}
