@@ -104,7 +104,7 @@
     handleFontSizeChange(localStorage.getItem("text_font_size") ?? "12");
 
     function getSelectionString() {
-        return document.getSelection().toString()
+        return document.getSelection().toString().trim();
     }
 
     function openPopup(e) {
@@ -127,8 +127,9 @@
     }
 
     function handleFontSizeChange(size) {
-        localStorage.setItem("text_font_size", size);
         article.style.fontSize = size + "px";
+        textSizeInput.value = size;
+        localStorage.setItem("text_font_size", size);
     }
 
     document.addEventListener('mouseup', openPopup);

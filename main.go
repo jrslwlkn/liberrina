@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"reflect"
 	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -38,21 +39,12 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
 func handleAddLang(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		rows, err := db.Query("select id, name from langs_dim")
+		var langs []LangDim
+		err := sql2slice("select id, name from langs_dim", nil, &langs)
 		if err != nil {
+			log.Fatal(err)
 			return
 		}
-		defer rows.Close()
-		var langs []LangDim
-		for rows.Next() {
-			var lang LangDim
-			if err := rows.Scan(&lang.Id, &lang.Name); err != nil {
-				fmt.Printf("failed to retrieve data from langs_dim table: %s\n", err)
-				return
-			}
-			langs = append(langs, lang)
-		}
-
 		temp := template.Must(template.ParseFiles("html/add-lang.html", "html/base.html"))
 		temp.ExecuteTemplate(w, "base", langs)
 	} else if r.Method == http.MethodPost {
@@ -105,7 +97,10 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			userID,
 		)
 		if err != nil {
-			w.Write([]byte("<div id='result' class='field error'><b>Database Error</b><br><br><code>" + err.Error() + "</code></div>"))
+			w.Write([]byte(
+				"<div id='result' class='field error'><b>Database Error</b><br><br><code>" +
+					err.Error() +
+					"</code></div>"))
 			fmt.Println("error: ", err.Error())
 		} else {
 			w.Write([]byte(`
@@ -117,4 +112,53 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			))
 		}
 	}
+}
+
+func handleAddDoc(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		temp := template.Must(template.ParseFiles("html/add-doc.html", "html/form-styles.html", "html/base.html"))
+		temp.ExecuteTemplate(w, "base", nil)
+	} else if r.Method == http.MethodPost {
+
+	}
+}
+
+func sql2slice[T any](query string, args []any, dest *[]T) error {
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+
+	sliceVal := reflect.ValueOf(dest).Elem()
+	elemType := sliceVal.Type().Elem()
+	for rows.Next() {
+		newElem := reflect.New(elemType).Elem()
+		fields := make([]interface{}, len(columns))
+		for i, col := range columns {
+			field, found := elemType.FieldByNameFunc(func(fieldName string) bool {
+				field, _ := elemType.FieldByName(fieldName)
+				return field.Tag.Get("db") == col
+			})
+			if found {
+				fields[i] = newElem.FieldByIndex(field.Index).Addr().Interface()
+			} else {
+				var placeholder interface{}
+				fields[i] = &placeholder
+			}
+		}
+
+		if err := rows.Scan(fields...); err != nil {
+			return err
+		}
+
+		sliceVal.Set(reflect.Append(sliceVal, newElem))
+	}
+
+	return nil
 }
