@@ -23,14 +23,27 @@
         float: right;
         width: 50%;
     }
+    .field .desc {
+        font-size: small;
+        color: grey;
+        display: block;
+    }
+    .field label {
+        max-width: 50%;
+    }
     @media only screen and (max-width: 600px) {
-        .field, .field * {
+        .field, 
+        .field label, 
+        .field input, 
+        .field textarea,
+        .field select {
             display: block;
             float: none !important;
             width: 100% !important;
         }
         .field label {
             margin-bottom: 5px;
+            max-width: 100%;
         }
     }
     #result+.field {

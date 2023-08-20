@@ -96,13 +96,13 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 		if lookupURI2.String != "" {
 			lookupURI2.String = form.Get("lookup_uri_2")
 		}
+		charsPattern := sql.NullString{String: form.Get("chars_pattern"), Valid: true}
+		if charsPattern.String == "" {
+			charsPattern.String = `[^A-Za-z'-]`
+		}
 		termSep := sql.NullString{String: form.Get("term_sep"), Valid: true}
 		if termSep.String == "" {
 			termSep.String = `\s+`
-		}
-		trimPattern := sql.NullString{String: form.Get("trim_pattern"), Valid: true}
-		if trimPattern.String == "" {
-			trimPattern.String = `[^A-Za-z'-]`
 		}
 		sentenceSep := sql.NullString{String: form.Get("sentence_sep"), Valid: true}
 		if sentenceSep.String == "" {
@@ -116,7 +116,7 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			lookup_uri_1,
 			lookup_uri_2,
 			term_sep,
-			trim_pattern,
+			chars_pattern,
 			sentence_sep,
 			added_at
 		) values (
@@ -129,7 +129,7 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			form.Get("lookup_uri_1"),
 			lookupURI2,
 			termSep,
-			trimPattern,
+			charsPattern,
 			sentenceSep,
 		)
 		if err != nil {

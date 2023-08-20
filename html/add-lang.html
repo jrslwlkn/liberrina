@@ -9,13 +9,19 @@
         <legend>Add new language</legend>
         <div id="result"></div>
         <div class="field">
-            <label for="name">Language name (label): </label>
+            <label for="name">
+                Friendly name:
+                <span class="desc">This is what it will show like in the list of languages</span>
+            </label>
             <input type="text"
                    name="name"
                    required>
         </div>
         <div class="field">
-            <label for="from_id">Study language: </label>
+            <label for="from_id">
+                Study language: 
+                <span class="desc">The language text should be translated from</span>
+            </label>
             <select name="from_id"
                     required>
                 <option value>Select one...</option>
@@ -25,7 +31,10 @@
             </select>
         </div>
         <div class="field">
-            <label for="to_id">Your language: </label>
+            <label for="to_id">
+                Your language: 
+                <span class="desc">The language text should be translated into</span>
+            </label>
             <select name="to_id"
                     required>
                 <option value>Select one...</option>
@@ -35,31 +44,60 @@
             </select>
         </div>
         <div class="field">
-            <label for="quick_lookup_uri">Quick term lookup URI: </label>
+            <label for="quick_lookup_uri" 
+                   title="">
+                Quick term lookup URI: 
+                <span class="desc">This value is used for inline lookup of selected text</span>
+            </label>
             <input type="text"
                    name="quick_lookup_uri"
                    required>
         </div>
         <div class="field">
-            <label for="lookup_uri_1">First dictionary lookup URI: </label>
+            <label for="lookup_uri_1">
+                First dictionary lookup URI: 
+                <span class="desc">Use <b>the_term</b> placeholder for the term to look-up like `https://translate.google.com/?sl=la&tl=en&text=<b>the_term</b>&op=translate`</span>
+            </label>
             <input type="text"
-                   name="lookup_uri_1"
-                   required>
+                   name="lookup_uri_1">
         </div>
         <div class="field">
-            <label for="lookup_uri_2">Second dictionary lookup URI: </label>
+            <label for="lookup_uri_2">
+                Second dictionary lookup URI: 
+                <span class="desc">Same as previous, just an extra one</span>
+            </label>
             <input type="text"
                    name="lookup_uri_2">
         </div>
         <div class="field">
-            <label for="term_sep">Term separator regex: </label>
+            <label for="chars_pattern">
+                Letter characters pattern:
+                <span class="desc">Regex that includes all letters used in studied language</span>
+            </label>
             <input type="text"
-                   name="term_sep">
+                   name="chars_pattern"
+                   value="[A-Za-z'-]"
+                   required>
         </div>
         <div class="field">
-            <label for="trim_pattern">Characters regex to trim in terms: </label>
+            <label for="term_sep">
+                Word delimiter pattern: 
+                <span class="desc">Regex to split text in words; usually whitespace and non-letter characters
+            </label>
             <input type="text"
-                   name="trim_pattern">
+                   name="term_sep"
+                   value="\s+"
+                   required>
+        </div>
+        <div class="field">
+            <label for="sentence_sep">
+                Sentence delimiter pattern: 
+                <span class="desc">Regex to split text in sentences; usually punctuation marks like period, question mark, exclamation mark etc.
+            </label>
+            <input type="text"
+                   name="sentence_sep"
+                   value="[.\?!;]"
+                   required>
         </div>
         <button type="submit">Save</button>
     </fieldset>
