@@ -108,10 +108,6 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 		if sentenceSep.String == "" {
 			sentenceSep.String = `[.\?!;]`
 		}
-		userID := sql.NullInt64{Int64: 0, Valid: true}
-		if val, err := strconv.ParseInt(form.Get("user_id"), 10, 64); err == nil {
-			userID.Int64 = val
-		}
 		_, err := db.Exec(`insert into langs(
 			name,
 			from_id,
@@ -122,7 +118,6 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			term_sep,
 			trim_pattern,
 			sentence_sep,
-			user_id,
 			added_at
 		) values (
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime()
@@ -136,7 +131,6 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			termSep,
 			trimPattern,
 			sentenceSep,
-			userID,
 		)
 		if err != nil {
 			w.Write([]byte(
