@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -26,15 +27,56 @@ func main() {
 	fmt.Println("listening...")
 
 	http.HandleFunc("/", handleIndex)
-
 	http.HandleFunc("/add-lang", handleAddLang)
+	http.HandleFunc("/add-doc", handleAddDoc)
+	http.HandleFunc("/doc/", handleDoc)
 
 	log.Fatal(http.ListenAndServe(":6969", nil))
 }
 
+type IndexModel struct {
+	Docs []Document
+}
+
 func handleIndex(w http.ResponseWriter, r *http.Request) {
+	var docs []Document
+	_ = sql2slice("select doc_id, title, author, added_at, term_count, terms_new, sentence_count from docs",
+		nil,
+		&docs,
+	)
+	// var langs []Lang
+	// _ = sql2slice("select lang_id, name, ",
+	// 	&docs,
+	// )
+	// for i, d := range docs {
+	// 	fmt.Printf("%d - %s - %s - %s - %d \n", i, d.Title, d.Author, d.AddedAt, d.NewTermCount)
+	// }
 	temp := template.Must(template.ParseFiles("html/index.html", "html/base.html"))
-	temp.ExecuteTemplate(w, "base", nil)
+	temp.ExecuteTemplate(w, "base", IndexModel{Docs: docs})
+}
+
+func handleDoc(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) != 3 {
+		template.Must(template.ParseFiles("html/404.html")).Execute(w, nil)
+		return
+	}
+	val, err := strconv.ParseInt(parts[2], 10, 64)
+	if err != nil {
+		template.Must(template.ParseFiles("html/404.html")).Execute(w, nil)
+		return
+	}
+	var docs []Document
+	_ = sql2slice("select doc_id, title, author, added_at, term_count, terms_new, sentence_count from docs where doc_id = ?",
+		[]any{val},
+		&docs,
+	)
+	if len(docs) != 1 {
+		template.Must(template.ParseFiles("html/404.html")).Execute(w, nil)
+		return
+	}
+	temp := template.Must(template.ParseFiles("html/doc.html", "html/base.html"))
+	temp.ExecuteTemplate(w, "base", docs[0])
 }
 
 func handleAddLang(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +87,7 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 			return
 		}
-		temp := template.Must(template.ParseFiles("html/add-lang.html", "html/base.html"))
+		temp := template.Must(template.ParseFiles("html/add-lang.html", "html/form-styles.html", "html/base.html"))
 		temp.ExecuteTemplate(w, "base", langs)
 	} else if r.Method == http.MethodPost {
 		r.ParseForm()

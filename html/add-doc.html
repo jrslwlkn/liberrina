@@ -2,17 +2,15 @@
 
 {{template "form-styles" .}}
 
-<form hx-post="/add-lang"
+<form hx-post="/add-doc"
       hx-swap="outerHTML"
       hx-target="#result">
     <fieldset>
-        <legend>Add new language</legend>
+        <legend>Add new document</legend>
         <div id="result"></div>
         <div class="field">
-            <label for="name">Language name (label): </label>
-            <input type="text"
-                   name="name"
-                   required>
+            <label for="title">Title: </label>
+            <textarea name="title" style="resize: vertical"></textarea>
         </div>
         <div class="field">
             <label for="from_id">Study language: </label>

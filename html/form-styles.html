@@ -1,0 +1,60 @@
+{{define "form-styles"}}
+
+<style>
+    form {
+        margin: 20px;
+    }
+
+    fieldset {
+        max-width: 800px;
+        padding: 20px;
+    }
+
+    legend {
+        font-size: large;
+        font-weight: bold;
+    }
+
+    .field {
+        margin: 15px 0;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    @media only screen and (max-width: 600px) {
+        .field, .field * {
+            display: block;
+            float: none !important;
+            width: 100% !important;
+        }
+        .field label {
+            margin-bottom: 5px;
+        }
+    }
+
+    #result+.field {
+        margin-top: 0;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+        float: right;
+        width: 50%;
+    }
+
+    button[type=submit] {
+        margin: 10px 0 0 0;
+        padding: 10px;
+        width: 100%;
+    }
+
+    #result.error {
+        border: 2px dotted darkred;
+        margin: 0 0 15px 0;
+        padding: 10px;
+        background: pink;
+    }
+</style>
+
+{{end}}
