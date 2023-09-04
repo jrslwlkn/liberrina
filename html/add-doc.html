@@ -4,68 +4,58 @@
 
 <form hx-post="/add-doc"
       hx-swap="outerHTML"
-      hx-target="#result">
+      hx-target="#result"
+      enctype="multipart/form-data">
     <fieldset>
         <legend>Add new document</legend>
         <div id="result"></div>
         <div class="field">
-            <label for="title">Title: </label>
+            <label for="lang_id">
+                Language:
+                <span class="desc">If this list is empty, you need to add at least one language pair first</span>
+            </label>
+            <select name="lang_id" required>
+                <option value>Select one...</option>
+                {{range .}}
+                <option value="{{.Id}}">{{.Name}}</option>
+                {{end}}
+            </select>
+        </div>
+        <div class="field">
+            <label for="title" required>Title:</label>
             <textarea name="title" style="resize: vertical"></textarea>
         </div>
         <div class="field">
-            <label for="from_id">Study language: </label>
-            <select name="from_id"
-                    required>
-                <option value>Select one...</option>
-                {{range .}}
-                <option value="{{.Id}}">{{.Name}}</option>
-                {{end}}
-            </select>
-        </div>
-        <div class="field">
-            <label for="to_id">Your language: </label>
-            <select name="to_id"
-                    required>
-                <option value>Select one...</option>
-                {{range .}}
-                <option value="{{.Id}}">{{.Name}}</option>
-                {{end}}
-            </select>
-        </div>
-        <div class="field">
-            <label for="quick_lookup_uri">Quick term lookup URI: </label>
+            <label for="author">Author:</label>
             <input type="text"
-                   name="quick_lookup_uri"
-                   required>
+                   name="author">
         </div>
         <div class="field">
-            <label for="lookup_uri_1">First dictionary lookup URI: </label>
+            <label for="tags">Tags:</label>
             <input type="text"
-                   name="lookup_uri_1"
-                   required>
+                   name="tags">
         </div>
         <div class="field">
-            <label for="lookup_uri_2">Second dictionary lookup URI: </label>
-            <input type="text"
-                   name="lookup_uri_2">
-        </div>
-        <div class="field">
-            <label for="term_sep">Term separator regex: </label>
-            <input type="text"
-                   name="term_sep">
-        </div>
-        <div class="field">
-            <label for="chars_pattern">Characters regex to trim in terms: </label>
-            <input type="text"
-                   name="chars_pattern">
+            <label for="notes">Notes:</label>
+            <textarea name="notes"></textarea>
         </div>
         <div class="field" style="display: inline;">
-            <label for="doc_body" style="display: block;">Document body: </label>
-            <textarea oninput="this.style.height=this.scrollHeight+'px'" name="doc_body" style="display: block; resize: vertical; width: 100%; margin: 10px 0 20px;"></textarea>
+            <label for="doc_body" style="display: block;">
+                Document body:
+                <span class="desc">Use this field to simply paste text from your clipboard</span>
+            </label>
+            <textarea oninput="this.style.height=this.scrollHeight+'px'" 
+                      name="doc_body" 
+                      rows="4"
+                      style="display: block; resize: vertical; width: 100%; margin: 10px 0 20px;">
+            </textarea>
         </div>
         <strong>OR</strong>
         <div class="field">
-            <label for="doc_file">Document text file: </label>
+            <label for="doc_file">
+                Document text file: 
+                <span class="desc">Use this field to upload plain text document no more than 20MB in size</span>
+            </label>
             <input type="file" accept=".txt" name="doc_file">
         </div>
         <button type="submit">Save</button>
