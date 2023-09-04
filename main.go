@@ -4,13 +4,17 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/net/html/charset"
 )
 
 var db *sql.DB
@@ -100,10 +104,6 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 		if charsPattern.String == "" {
 			charsPattern.String = `[^A-Za-z'-]`
 		}
-		termSep := sql.NullString{String: form.Get("term_sep"), Valid: true}
-		if termSep.String == "" {
-			termSep.String = `\s+`
-		}
 		sentenceSep := sql.NullString{String: form.Get("sentence_sep"), Valid: true}
 		if sentenceSep.String == "" {
 			sentenceSep.String = `[.\?!;]`
@@ -115,12 +115,11 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			quick_lookup_uri,
 			lookup_uri_1,
 			lookup_uri_2,
-			term_sep,
 			chars_pattern,
 			sentence_sep,
 			added_at
 		) values (
-			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime()
+			?, ?, ?, ?, ?, ?, ?, ?, ?, datetime()
 		)`,
 			form.Get("name"),
 			form.Get("from_id"),
@@ -128,7 +127,6 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			form.Get("quick_lookup_uri"),
 			form.Get("lookup_uri_1"),
 			lookupURI2,
-			termSep,
 			charsPattern,
 			sentenceSep,
 		)
@@ -150,12 +148,138 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type Particle struct {
+	Index  int64
+	Value  string
+	Suffix string
+	Level  uint8
+}
+
 func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
+		var langs []Lang
+		err := sql2slice("select lang_id, name from langs", nil, &langs)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
 		temp := template.Must(template.ParseFiles("html/add-doc.html", "html/form-styles.html", "html/base.html"))
-		temp.ExecuteTemplate(w, "base", nil)
+		temp.ExecuteTemplate(w, "base", langs)
 	} else if r.Method == http.MethodPost {
+		r.ParseForm()
+		form := r.Form
+		fmt.Println(form)
 
+		// author := sql.NullString{String: form.Get("author"), Valid: true}
+		// tags := sql.NullString{String: form.Get("tags"), Valid: true}
+		// notes := sql.NullString{String: form.Get("notes"), Valid: true}
+
+		body := form.Get("doc_body")
+		fmt.Println("body is: ", body)
+		if body == "" {
+			r.ParseMultipartForm(20 << 20) // 20 MB limit
+			file, _, err := r.FormFile("doc_file")
+			if err != nil {
+				log.Fatal(err)
+				return
+			}
+			defer file.Close()
+
+			preview := make([]byte, 1024)
+			io.ReadFull(file, preview)
+			_, enc, certain := charset.DetermineEncoding(preview, "plain/text")
+			// HACK: this is to make Ukrainian work
+			if !certain && enc == "windows-1252" {
+				enc = "windows-1251"
+			}
+
+			reader, err := charset.NewReaderLabel(enc, file)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fileBytes, err := io.ReadAll(reader)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			body := string(fileBytes)
+			re := regexp.MustCompile(`[A-Za-z'А-Яа-я'ґЃєЄїЇіІ]`)
+
+			var i int64 = 1
+			var particles []Particle
+			var cur Particle
+			var inTerm bool = false
+			var builder strings.Builder
+
+			for _, x := range strings.Split(body, "") {
+				if re.MatchString(x) {
+					if inTerm {
+						// NOTE: keep growing the term
+						builder.WriteString(x)
+					} else {
+						inTerm = true
+						// NOTE: this is the end of suffix
+						cur.Suffix = builder.String()
+						if cur.Value != "" || cur.Suffix != "" {
+							particles = append(particles, cur)
+							builder.Reset()
+							i++
+						}
+						// create another particle
+						cur = Particle{Index: i}
+						builder.WriteString(x)
+					}
+				} else {
+					if inTerm {
+						// NOTE: this is the end of the term
+						inTerm = false
+						cur.Value = builder.String()
+						builder.Reset()
+						builder.WriteString(x)
+					} else {
+						// NOTE: keep growing the suffix
+						builder.WriteString(x)
+					}
+				}
+			}
+
+			if inTerm {
+				cur.Value = builder.String()
+			} else {
+				cur.Suffix = builder.String()
+			}
+			particles = append(particles, cur)
+
+			_, err = db.Exec("delete from chunks where doc_id=0")
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			start := time.Now()
+			db.Exec("begin transaction")
+			for _, x := range particles {
+				_, err := db.Exec(
+					`insert into chunks (
+						doc_id,
+						position,
+						value,
+						suffix
+					 ) values (?, ?, ?, ?)`,
+					0,
+					x.Index,
+					x.Value,
+					x.Suffix,
+				)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				// fmt.Printf("i: %d, value: '%s', suffix: '%s'\n", x.Index, x.Value, x.Suffix)
+			}
+			db.Exec("commit transaction")
+			fmt.Println("inserted in ", time.Since(start))
+		}
 	}
 }
 

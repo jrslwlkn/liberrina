@@ -7,6 +7,11 @@ type LangDim struct {
 	Name string `db:"name"`
 }
 
+type Lang struct {
+	Id string `db:"lang_id"`
+	Name string `db:"name"`
+}
+
 type Document struct {
 	Id int64 `db:"doc_id"`
 	Title string `db:"title"`
