@@ -1,4 +1,8 @@
-### Development Setup
+# Liberrina
+
+(WIP) Simple web app for learning languages/words by reading with built-in translation capabilities via Google Translate and Anki integration via AnkiConnect.
+
+## Development Setup
 
 1. Install [golang](https://go.dev/dl/).
 
@@ -19,4 +23,10 @@
     Or use hot reloading with [entr](https://github.com/eradman/entr):
 	```
     find . -name "*.go" | entr -r go run . 
+    ```
+
+    Or use hot reloading with [air](https://github.com/air-verse/air):
+
+    ```
+    air
     ```
