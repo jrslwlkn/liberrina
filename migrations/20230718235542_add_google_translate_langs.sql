@@ -137,11 +137,11 @@ values
     ('Xhosa', 'xh'),
     ('Yiddish', 'yi'),
     ('Yoruba', 'yo'),
-    ('Zulu', 'zu')
+    ('Zulu', 'zu');
 
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-delete langs_dim
+delete from langs_dim;
 -- +goose StatementEnd

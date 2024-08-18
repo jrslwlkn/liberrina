@@ -35,18 +35,19 @@ func main() {
 	http.HandleFunc("/add-doc", handleAddDoc)
 	http.HandleFunc("/doc/", handleDoc)
 
+	log.Println("listening...")
 	log.Fatal(http.ListenAndServe(":6969", nil))
 }
 
-type IndexModel struct {
+type IndexData struct {
 	Docs []Document
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	var docs []Document
-	_ = sql2slice("select doc_id, title, author, added_at, term_count, terms_new, sentence_count from docs",
+	_ = query("select doc_id, title, author, added_at, term_count, terms_new, sentence_count from docs",
 		nil,
-		&docs,
+		docs,
 	)
 	// var langs []Lang
 	// _ = sql2slice("select lang_id, name, ",
@@ -55,43 +56,43 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	// for i, d := range docs {
 	// 	fmt.Printf("%d - %s - %s - %s - %d \n", i, d.Title, d.Author, d.AddedAt, d.NewTermCount)
 	// }
-	temp := template.Must(template.ParseFiles("html/index.html", "html/base.html"))
-	temp.ExecuteTemplate(w, "base", IndexModel{Docs: docs})
+	temp := template.Must(template.ParseFiles("www/index.html", "www/base.html"))
+	temp.ExecuteTemplate(w, "base", IndexData{Docs: docs})
 }
 
 func handleDoc(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) != 3 {
-		template.Must(template.ParseFiles("html/404.html")).Execute(w, nil)
+		template.Must(template.ParseFiles("www/404.html")).Execute(w, nil)
 		return
 	}
 	val, err := strconv.ParseInt(parts[2], 10, 64)
 	if err != nil {
-		template.Must(template.ParseFiles("html/404.html")).Execute(w, nil)
+		template.Must(template.ParseFiles("www/404.html")).Execute(w, nil)
 		return
 	}
 	var docs []Document
-	_ = sql2slice("select doc_id, title, author, added_at, term_count, terms_new, sentence_count from docs where doc_id = ?",
+	_ = query("select doc_id, title, author, added_at, term_count, terms_new, sentence_count from docs where doc_id = ?",
 		[]any{val},
-		&docs,
+		docs,
 	)
 	if len(docs) != 1 {
-		template.Must(template.ParseFiles("html/404.html")).Execute(w, nil)
+		template.Must(template.ParseFiles("www/404.html")).Execute(w, nil)
 		return
 	}
-	temp := template.Must(template.ParseFiles("html/doc.html", "html/base.html"))
+	temp := template.Must(template.ParseFiles("www/doc.html", "www/base.html"))
 	temp.ExecuteTemplate(w, "base", docs[0])
 }
 
 func handleAddLang(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		var langs []LangDim
-		err := sql2slice("select id, name from langs_dim", nil, &langs)
+		err := query("select id, name from langs_dim", nil, langs)
 		if err != nil {
 			log.Fatal(err)
 			return
 		}
-		temp := template.Must(template.ParseFiles("html/add-lang.html", "html/form-styles.html", "html/base.html"))
+		temp := template.Must(template.ParseFiles("www/add-lang.html", "www/form-styles.html", "www/base.html"))
 		temp.ExecuteTemplate(w, "base", langs)
 	} else if r.Method == http.MethodPost {
 		r.ParseForm()
@@ -148,6 +149,7 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Particle represents a small chunk of text like a word and surrounding spaces and punctuation.
 type Particle struct {
 	Index  int64
 	Value  string
@@ -158,12 +160,12 @@ type Particle struct {
 func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		var langs []Lang
-		err := sql2slice("select lang_id, name from langs", nil, &langs)
+		err := query("select lang_id, name from langs", nil, langs)
 		if err != nil {
 			log.Fatal(err)
 			return
 		}
-		temp := template.Must(template.ParseFiles("html/add-doc.html", "html/form-styles.html", "html/base.html"))
+		temp := template.Must(template.ParseFiles("www/add-doc.html", "www/form-styles.html", "www/base.html"))
 		temp.ExecuteTemplate(w, "base", langs)
 	} else if r.Method == http.MethodPost {
 		r.ParseForm()
@@ -283,7 +285,7 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func sql2slice[T any](query string, args []any, dest *[]T) error {
+func query[T any](query string, args []any, dest []T) error {
 	rows, err := db.Query(query, args...)
 	if err != nil {
 		return err
@@ -295,10 +297,10 @@ func sql2slice[T any](query string, args []any, dest *[]T) error {
 		return err
 	}
 
-	sliceVal := reflect.ValueOf(dest).Elem()
+	sliceVal := reflect.ValueOf(dest)
 	elemType := sliceVal.Type().Elem()
 	for rows.Next() {
-		newElem := reflect.New(elemType).Elem()
+		newElem := reflect.New(elemType)
 		fields := make([]interface{}, len(columns))
 		for i, col := range columns {
 			field, found := elemType.FieldByNameFunc(func(fieldName string) bool {
