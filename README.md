@@ -2,6 +2,20 @@
 
 (WIP) Simple web app for learning languages/words by reading with built-in translation capabilities via Google Translate and Anki integration via AnkiConnect.
 
+## Checklist
+
+- [x] Basic UI
+- [x] Basic DB setup
+- [ ] Dark Mode
+- [ ] Add Tests
+- [ ] Improve Encoding Identification
+- [ ] Add Anki Integration
+- [ ] Improve Error Logs (report to UI?)
+- [ ] Handle EPUB
+- [ ] Handle PDF
+- [ ] Handle MOBI
+- [ ] Handle AZW/AZW3
+
 ## Development Setup
 
 1. Install [golang](https://go.dev/dl/).
