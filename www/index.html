@@ -1,62 +1,17 @@
+{{define "index"}}
+{{template "page-layout" .}}
+{{end}}
+
 {{define "page"}}
-
-<style>
-    .container {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        grid-gap: 40px;
-        padding: 0 20px;
-    }
-
-    @media screen and (max-width: 600px) {
-        .container {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .title {
-        border-bottom: 1px solid lightgrey;
-        padding: 20px 0 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .title h3 {
-        margin: auto;
-    }
-
-    ul {
-        padding: 0;
-        list-style: none;
-    }
-
-    section li {
-        margin-top: 10px;
-    }
-
-    a {
-        text-decoration: none;
-        color: initial;
-    }
-
-    .square-button {
-        width: 30px;
-        height: 30px;
-        border: none;
-        font-size: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 5px;
-    }
-</style>
 
 <div class="container">
     <section>
         <div class="title">
             <h3>Documents</h3>
-            <a href="/add-doc"><button class="square-button" title="Add new document">+</button></a>
+            <a href="/add-doc">
+                <button class="square-button"
+                        title="Add new document">+</button>
+            </a>
         </div>
         <ul>
             {{range .Docs}}
@@ -67,8 +22,11 @@
 
     <section>
         <div class="title">
-            <h3>Languages</h3>
-            <a href="/add-lang"><button class="square-button" title="Add new language">+</button></a>
+            <h3>Language Pairs</h3>
+            <a href="/add-lang">
+                <button class="square-button"
+                        title="Add new language">+</button>
+            </a>
         </div>
         <ul>
             <li>Language 1</li>

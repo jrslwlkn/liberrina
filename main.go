@@ -18,6 +18,8 @@ import (
 )
 
 var db *sql.DB
+var templs = make(map[string]*template.Template)
+var fs http.Handler
 
 func main() {
 	var err error
@@ -28,12 +30,19 @@ func main() {
 	}
 	defer db.Close()
 
-	fmt.Println("listening...")
+	templs["404"] = template.Must(template.ParseFiles("www/404.html"))
+	templs["index"] = template.Must(template.ParseFiles("www/page-layout.html", "www/index.html"))
+	templs["add-lang"] = template.Must(template.ParseFiles("www/page-layout.html", "www/add-lang.html"))
+	templs["add-doc"] = template.Must(template.ParseFiles("www/page-layout.html", "www/add-doc.html"))
+	templs["doc"] = template.Must(template.ParseFiles("www/page-layout.html", "www/doc.html"))
 
-	http.HandleFunc("/", handleIndex)
+	fs = http.StripPrefix("/www/", http.FileServer(http.Dir("www")))
+	http.HandleFunc("/www/", handleStatic)
+
 	http.HandleFunc("/add-lang", handleAddLang)
 	http.HandleFunc("/add-doc", handleAddDoc)
 	http.HandleFunc("/doc/", handleDoc)
+	http.HandleFunc("/", handleIndex)
 
 	log.Println("listening...")
 	log.Fatal(http.ListenAndServe(":6969", nil))
@@ -44,11 +53,18 @@ type IndexData struct {
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
-	var docs []Document
-	_ = query("select doc_id, title, author, added_at, term_count, terms_new, sentence_count from docs",
+	if r.URL.Path != "/" {
+		render(w, "404", nil)
+		return
+	}
+	docs := make([]Document, 0)
+	err := runSQL("select doc_id, title, author, added_at, term_count, terms_new, sentence_count from docs",
 		nil,
-		docs,
+		&docs,
 	)
+	if err != nil {
+		return
+	}
 	// var langs []Lang
 	// _ = sql2slice("select lang_id, name, ",
 	// 	&docs,
@@ -56,44 +72,38 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	// for i, d := range docs {
 	// 	fmt.Printf("%d - %s - %s - %s - %d \n", i, d.Title, d.Author, d.AddedAt, d.NewTermCount)
 	// }
-	temp := template.Must(template.ParseFiles("www/index.html", "www/base.html"))
-	temp.ExecuteTemplate(w, "base", IndexData{Docs: docs})
+
+	render(w, "index", IndexData{Docs: docs})
 }
 
 func handleDoc(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) != 3 {
-		template.Must(template.ParseFiles("www/404.html")).Execute(w, nil)
+		render(w, "404", nil)
 		return
 	}
 	val, err := strconv.ParseInt(parts[2], 10, 64)
 	if err != nil {
-		template.Must(template.ParseFiles("www/404.html")).Execute(w, nil)
+		render(w, "404", nil)
 		return
 	}
 	var docs []Document
-	_ = query("select doc_id, title, author, added_at, term_count, terms_new, sentence_count from docs where doc_id = ?",
+	_ = runSQL("select doc_id, title, author, added_at, term_count, terms_new, sentence_count from docs where doc_id = ?",
 		[]any{val},
-		docs,
+		&docs,
 	)
 	if len(docs) != 1 {
-		template.Must(template.ParseFiles("www/404.html")).Execute(w, nil)
+		render(w, "404", nil)
 		return
 	}
-	temp := template.Must(template.ParseFiles("www/doc.html", "www/base.html"))
-	temp.ExecuteTemplate(w, "base", docs[0])
+	render(w, "doc", docs[0])
 }
 
 func handleAddLang(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		var langs []LangDim
-		err := query("select id, name from langs_dim", nil, langs)
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
-		temp := template.Must(template.ParseFiles("www/add-lang.html", "www/form-styles.html", "www/base.html"))
-		temp.ExecuteTemplate(w, "base", langs)
+		langs := make([]LangDim, 0)
+		runSQL("select id, name from langs_dim", nil, &langs)
+		render(w, "add-lang", langs)
 	} else if r.Method == http.MethodPost {
 		r.ParseForm()
 		form := r.Form
@@ -159,14 +169,9 @@ type Particle struct {
 
 func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		var langs []Lang
-		err := query("select lang_id, name from langs", nil, langs)
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
-		temp := template.Must(template.ParseFiles("www/add-doc.html", "www/form-styles.html", "www/base.html"))
-		temp.ExecuteTemplate(w, "base", langs)
+		langs := make([]Lang, 0)
+		runSQL("select lang_id, name from langs", nil, &langs)
+		render(w, "add-doc", langs)
 	} else if r.Method == http.MethodPost {
 		r.ParseForm()
 		form := r.Form
@@ -285,22 +290,22 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func query[T any](query string, args []any, dest []T) error {
+func runSQL[T any](query string, args []any, dest *[]T) error {
 	rows, err := db.Query(query, args...)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 	defer rows.Close()
 
 	columns, err := rows.Columns()
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
-	sliceVal := reflect.ValueOf(dest)
+	sliceVal := reflect.ValueOf(dest).Elem()
 	elemType := sliceVal.Type().Elem()
 	for rows.Next() {
-		newElem := reflect.New(elemType)
+		newElem := reflect.New(elemType).Elem()
 		fields := make([]interface{}, len(columns))
 		for i, col := range columns {
 			field, found := elemType.FieldByNameFunc(func(fieldName string) bool {
@@ -316,11 +321,29 @@ func query[T any](query string, args []any, dest []T) error {
 		}
 
 		if err := rows.Scan(fields...); err != nil {
-			return err
+			log.Fatal(err)
 		}
 
 		sliceVal.Set(reflect.Append(sliceVal, newElem))
 	}
 
 	return nil
+}
+
+func render(w http.ResponseWriter, name string, data interface{}) {
+	t, ok := templs[name]
+	if !ok || name == "404" {
+		w.WriteHeader(http.StatusNotFound)
+		templs["404"].ExecuteTemplate(w, "404", nil)
+		return
+	}
+	t.ExecuteTemplate(w, name, data)
+}
+
+func handleStatic(w http.ResponseWriter, r *http.Request) {
+	if strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".ico") {
+		fs.ServeHTTP(w, r)
+	} else {
+		render(w, "404", nil)
+	}
 }

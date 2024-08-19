@@ -1,6 +1,8 @@
-{{define "page"}}
+{{define "add-lang"}}
+{{template "page-layout" .}}
+{{end}}
 
-{{template "form-styles" .}}
+{{define "page"}}
 
 <form hx-post="/add-lang"
       hx-swap="outerHTML"
@@ -11,7 +13,7 @@
         <div class="field">
             <label for="name">
                 Friendly name:
-                <span class="desc">This is what it will show like in the list of languages</span>
+                <span class="desc">This is what it will show like in the list of language pairs</span>
             </label>
             <input type="text"
                    name="name"
@@ -49,15 +51,17 @@
                 <span class="desc">This value is used for inline lookup of selected text</span>
             </label>
             <input type="text"
+                   style="font-family: monospace;"
                    name="quick_lookup_uri"
                    required>
         </div>
         <div class="field">
             <label for="lookup_uri_1">
                 First dictionary lookup URI: 
-                <span class="desc">Use <b>the_term</b> placeholder for the term to look-up like `https://translate.google.com/?sl=la&tl=en&text=<b>the_term</b>&op=translate`</span>
+                <span class="desc">Use <b><code>the_term</code></b> placeholder for the term to look-up like `<code>https://translate.google.com/?sl=la&tl=en&text=<b>the_term</b>&op=translate`</code></span>
             </label>
             <input type="text"
+                   style="font-family: monospace;"
                    name="lookup_uri_1">
         </div>
         <div class="field">
@@ -66,6 +70,7 @@
                 <span class="desc">Same as previous, just an extra one</span>
             </label>
             <input type="text"
+                   style="font-family: monospace;"
                    name="lookup_uri_2">
         </div>
         <div class="field">
@@ -76,6 +81,7 @@
             <input type="text"
                    name="chars_pattern"
                    value="[A-Za-z'-]"
+                   style="font-family: monospace;"
                    required>
         </div>
         <div class="field">
@@ -86,6 +92,7 @@
             <input type="text"
                    name="sentence_sep"
                    value="[.\?!;]"
+                   style="font-family: monospace;"
                    required>
         </div>
         <button type="submit">Save</button>

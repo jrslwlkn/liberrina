@@ -1,6 +1,8 @@
-{{define "page"}}
+{{define "add-doc"}}
+{{template "page-layout" .}}
+{{end}}
 
-{{template "form-styles" .}}
+{{define "page"}}
 
 <form hx-post="/add-doc"
       hx-swap="outerHTML"
@@ -11,10 +13,11 @@
         <div id="result"></div>
         <div class="field">
             <label for="lang_id">
-                Language:
+                Language pair:
                 <span class="desc">If this list is empty, you need to add at least one language pair first</span>
             </label>
-            <select name="lang_id" required>
+            <select name="lang_id"
+                    required>
                 <option value>Select one...</option>
                 {{range .}}
                 <option value="{{.Id}}">{{.Name}}</option>
@@ -22,8 +25,10 @@
             </select>
         </div>
         <div class="field">
-            <label for="title" required>Title:</label>
-            <textarea name="title" style="resize: vertical"></textarea>
+            <label for="title"
+                   required>Title:</label>
+            <textarea name="title"
+                      style="resize: vertical"></textarea>
         </div>
         <div class="field">
             <label for="author">Author:</label>
@@ -33,19 +38,22 @@
         <div class="field">
             <label for="tags">Tags:</label>
             <input type="text"
+                   style="font-family: monospace;"
                    name="tags">
         </div>
         <div class="field">
             <label for="notes">Notes:</label>
             <textarea name="notes"></textarea>
         </div>
-        <div class="field" style="display: inline;">
-            <label for="doc_body" style="display: block;">
+        <div class="field"
+             style="display: inline;">
+            <label for="doc_body"
+                   style="display: block;">
                 Document body:
                 <span class="desc">Use this field to simply paste text from your clipboard</span>
             </label>
-            <textarea oninput="this.style.height=this.scrollHeight+'px'" 
-                      name="doc_body" 
+            <textarea oninput="this.style.height=this.scrollHeight+'px'"
+                      name="doc_body"
                       rows="4"
                       style="display: block; resize: vertical; width: 100%; margin: 10px 0 20px;">
             </textarea>
@@ -53,10 +61,12 @@
         <strong>OR</strong>
         <div class="field">
             <label for="doc_file">
-                Document text file: 
+                Document text file:
                 <span class="desc">Use this field to upload plain text document no more than 20MB in size</span>
             </label>
-            <input type="file" accept=".txt" name="doc_file">
+            <input type="file"
+                   accept=".txt"
+                   name="doc_file">
         </div>
         <button type="submit">Save</button>
     </fieldset>

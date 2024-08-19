@@ -1,3 +1,7 @@
+{{define "doc"}}
+{{template "page-layout" .}}
+{{end}}
+
 {{define "page"}}
 
 <style>
@@ -10,6 +14,7 @@
         box-shadow: 3px 3px 3px lightgrey;
         border: none;
     }
+
     article {
         max-width: 800px;
         margin: 20px auto;
@@ -18,14 +23,17 @@
         cursor: default;
         padding: 0 20px;
     }
+
     nav {
         display: flex;
         margin: 20px;
         justify-content: end;
     }
+
     input[type=number] {
         width: 3rem;
     }
+
     .control {
         border: 1px solid lightgrey;
         padding: 5px;
@@ -128,7 +136,7 @@
         range.collapse(true);
         let rects = range.getClientRects();
         let rect = rects[0];
-        return {x: rect.x, y: rect.y};
+        return { x: rect.x, y: rect.y };
     }
 
     document.addEventListener('mouseup', openPopup);
