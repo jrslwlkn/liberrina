@@ -1,23 +1,27 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"liberrina/db/generated"
 
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/net/html/charset"
 )
 
 var db *sql.DB
+var query *queries.Queries
+var ctx context.Context
 var templs = make(map[string]*template.Template)
 var fs http.Handler
 
@@ -29,6 +33,8 @@ func main() {
 		return
 	}
 	defer db.Close()
+	query = queries.New(db)
+	ctx = context.Background()
 
 	templs["404"] = template.Must(template.ParseFiles("www/404.html"))
 	templs["index"] = template.Must(template.ParseFiles("www/page-layout.html", "www/index.html"))
@@ -48,32 +54,20 @@ func main() {
 	log.Fatal(http.ListenAndServe(":6969", nil))
 }
 
-type IndexData struct {
-	Docs []Document
-}
-
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		render(w, "404", nil)
 		return
 	}
-	docs := make([]Document, 0)
-	err := runSQL("select doc_id, title, author, added_at, term_count, terms_new, sentence_count from docs",
-		nil,
-		&docs,
-	)
+	docs, err := query.GetDocs(ctx)
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
-	// var langs []Lang
-	// _ = sql2slice("select lang_id, name, ",
-	// 	&docs,
-	// )
-	// for i, d := range docs {
-	// 	fmt.Printf("%d - %s - %s - %s - %d \n", i, d.Title, d.Author, d.AddedAt, d.NewTermCount)
-	// }
-
-	render(w, "index", IndexData{Docs: docs})
+	langs, err := query.GetLangs(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	render(w, "index", IndexData{docs, langs})
 }
 
 func handleDoc(w http.ResponseWriter, r *http.Request) {
@@ -87,60 +81,50 @@ func handleDoc(w http.ResponseWriter, r *http.Request) {
 		render(w, "404", nil)
 		return
 	}
-	var docs []Document
-	_ = runSQL("select doc_id, title, author, added_at, term_count, terms_new, sentence_count from docs where doc_id = ?",
-		[]any{val},
-		&docs,
-	)
-	if len(docs) != 1 {
+	doc, err := query.GetDocByID(ctx, val)
+	if err != nil {
 		render(w, "404", nil)
 		return
 	}
-	render(w, "doc", docs[0])
+	render(w, "doc", doc)
 }
 
 func handleAddLang(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		langs := make([]LangDim, 0)
-		runSQL("select id, name from langs_dim", nil, &langs)
+		langs, err := query.GetAllLangs(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
 		render(w, "add-lang", langs)
 	} else if r.Method == http.MethodPost {
 		r.ParseForm()
 		form := r.Form
+		lookupURI1 := sql.NullString{String: form.Get("lookup_uri_1"), Valid: true}
+		if lookupURI1.String != "" {
+			lookupURI1.String = form.Get("lookup_uri_1")
+		}
 		lookupURI2 := sql.NullString{String: form.Get("lookup_uri_2"), Valid: true}
 		if lookupURI2.String != "" {
 			lookupURI2.String = form.Get("lookup_uri_2")
 		}
-		charsPattern := sql.NullString{String: form.Get("chars_pattern"), Valid: true}
-		if charsPattern.String == "" {
-			charsPattern.String = `[^A-Za-z'-]`
+		charsPattern := form.Get("chars_pattern")
+		if charsPattern == "" {
+			charsPattern = `[^A-Za-z'-]`
 		}
-		sentenceSep := sql.NullString{String: form.Get("sentence_sep"), Valid: true}
-		if sentenceSep.String == "" {
-			sentenceSep.String = `[.\?!;]`
+		sentenceSep := form.Get("sentence_sep")
+		if sentenceSep == "" {
+			sentenceSep = `[.\?!;]`
 		}
-		_, err := db.Exec(`insert into langs(
-			name,
-			from_id,
-			to_id,
-			quick_lookup_uri,
-			lookup_uri_1,
-			lookup_uri_2,
-			chars_pattern,
-			sentence_sep,
-			added_at
-		) values (
-			?, ?, ?, ?, ?, ?, ?, ?, ?, datetime()
-		)`,
-			form.Get("name"),
-			form.Get("from_id"),
-			form.Get("to_id"),
-			form.Get("quick_lookup_uri"),
-			form.Get("lookup_uri_1"),
-			lookupURI2,
-			charsPattern,
-			sentenceSep,
-		)
+		_, err := query.AddLang(ctx, queries.AddLangParams{
+			Name:           form.Get("name"),
+			FromID:         form.Get("from_id"),
+			ToID:           form.Get("to_id"),
+			QuickLookupURI: form.Get("quick_lookup_uri"),
+			LookupURI1:     lookupURI1,
+			LookupURI2:     lookupURI2,
+			CharsPattern:   charsPattern,
+			SentenceSep:    sentenceSep,
+		})
 		if err != nil {
 			w.Write([]byte(
 				"<div id='result' class='field error'><b>Database Error</b><br><br><code>" +
@@ -159,18 +143,12 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Particle represents a small chunk of text like a word and surrounding spaces and punctuation.
-type Particle struct {
-	Index  int64
-	Value  string
-	Suffix string
-	Level  uint8
-}
-
 func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		langs := make([]Lang, 0)
-		runSQL("select lang_id, name from langs", nil, &langs)
+		langs, err := query.GetAllLangs(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
 		render(w, "add-doc", langs)
 	} else if r.Method == http.MethodPost {
 		r.ParseForm()
@@ -182,7 +160,7 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 		// notes := sql.NullString{String: form.Get("notes"), Valid: true}
 
 		body := form.Get("doc_body")
-		fmt.Println("body is: ", body)
+		// fmt.Println("body is: ", body)
 		if body == "" {
 			r.ParseMultipartForm(20 << 20) // 20 MB limit
 			file, _, err := r.FormFile("doc_file")
@@ -213,8 +191,8 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 			re := regexp.MustCompile(`[A-Za-z'А-Яа-я'ґЃєЄїЇіІ]`)
 
 			var i int64 = 1
-			var particles []Particle
-			var cur Particle
+			var chunks []queries.AddChunkParams
+			var cur queries.AddChunkParams
 			var inTerm bool = false
 			var builder strings.Builder
 
@@ -228,12 +206,12 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 						// NOTE: this is the end of suffix
 						cur.Suffix = builder.String()
 						if cur.Value != "" || cur.Suffix != "" {
-							particles = append(particles, cur)
+							chunks = append(chunks, cur)
 							builder.Reset()
 							i++
 						}
 						// create another particle
-						cur = Particle{Index: i}
+						cur = queries.AddChunkParams{Position: i, DocID: 0} // TODO: use actual document ID
 						builder.WriteString(x)
 					}
 				} else {
@@ -255,79 +233,35 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 			} else {
 				cur.Suffix = builder.String()
 			}
-			particles = append(particles, cur)
+			chunks = append(chunks, cur)
 
-			_, err = db.Exec("delete from chunks where doc_id=0")
-			if err != nil {
-				fmt.Println(err)
-				return
+			if err := query.PruneChunks(ctx, 0); err != nil { // TODO: use actual document ID
+				log.Fatal(err)
 			}
 
 			start := time.Now()
-			db.Exec("begin transaction")
-			for _, x := range particles {
-				_, err := db.Exec(
-					`insert into chunks (
-						doc_id,
-						position,
-						value,
-						suffix
-					 ) values (?, ?, ?, ?)`,
-					0,
-					x.Index,
-					x.Value,
-					x.Suffix,
-				)
+			tx, err := db.Begin()
+			if err != nil {
+				log.Fatal(err)
+			}
+			qtx := query.WithTx(tx)
+			for _, chunk := range chunks { // TODO: any better way to avoid storing all these in memory?
+				err = qtx.PruneChunks(ctx, 0)
 				if err != nil {
-					fmt.Println(err)
-					return
+					log.Fatal(err)
+				}
+				_, err := qtx.AddChunk(ctx, chunk)
+				if err != nil {
+					log.Fatal(err)
 				}
 				// fmt.Printf("i: %d, value: '%s', suffix: '%s'\n", x.Index, x.Value, x.Suffix)
 			}
-			db.Exec("commit transaction")
-			fmt.Println("inserted in ", time.Since(start))
-		}
-	}
-}
-
-func runSQL[T any](query string, args []any, dest *[]T) error {
-	rows, err := db.Query(query, args...)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	columns, err := rows.Columns()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	sliceVal := reflect.ValueOf(dest).Elem()
-	elemType := sliceVal.Type().Elem()
-	for rows.Next() {
-		newElem := reflect.New(elemType).Elem()
-		fields := make([]interface{}, len(columns))
-		for i, col := range columns {
-			field, found := elemType.FieldByNameFunc(func(fieldName string) bool {
-				field, _ := elemType.FieldByName(fieldName)
-				return field.Tag.Get("db") == col
-			})
-			if found {
-				fields[i] = newElem.FieldByIndex(field.Index).Addr().Interface()
-			} else {
-				var placeholder interface{}
-				fields[i] = &placeholder
+			if err := tx.Commit(); err != nil {
+				log.Fatal(err)
 			}
+			log.Println("inserted in ", time.Since(start))
 		}
-
-		if err := rows.Scan(fields...); err != nil {
-			log.Fatal(err)
-		}
-
-		sliceVal.Set(reflect.Append(sliceVal, newElem))
 	}
-
-	return nil
 }
 
 func render(w http.ResponseWriter, name string, data interface{}) {
