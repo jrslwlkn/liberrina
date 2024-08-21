@@ -18,11 +18,19 @@ body {
   font-family: "Trebuchet MS", "Helvetica", "Optima", "Gill Sans", sans-serif;
   background-color: var(--bg-color);
   color: var(--txt-color);
+  max-width: 800px;
+  margin: auto;
 }
 
 * {
   box-sizing: border-box;
   border: none;
+}
+
+#theme {
+  font-size: x-large;
+  display: block;
+  margin: 15px;
 }
 
 button {

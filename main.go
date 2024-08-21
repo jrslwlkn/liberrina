@@ -275,7 +275,7 @@ func render(w http.ResponseWriter, name string, data interface{}) {
 }
 
 func handleStatic(w http.ResponseWriter, r *http.Request) {
-	if strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".ico") {
+	if strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".ico") || strings.HasSuffix(r.URL.Path, ".jpg") {
 		fs.ServeHTTP(w, r)
 	} else {
 		render(w, "404", nil)
