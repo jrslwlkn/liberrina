@@ -6,9 +6,10 @@
 
 - [x] Basic UI
 - [x] Basic DB setup
-- [ ] Dark Mode
+- [x] Dark Mode
 - [ ] Add Tests
 - [ ] Improve Encoding Identification
+- [ ] I18n?
 - [ ] Add Anki Integration
 - [ ] Improve Error Logs (report to UI?)
 - [ ] Handle EPUB

@@ -19,7 +19,33 @@
       {{end}}
 </head>
 
-<body>
+<body hx-boost="true">
+      <select id="theme"
+              onchange="setTheme(this)"
+              style="font-size: x-large; display: block; margin: 20px;">
+            <option value="light">🌞</option>
+            <option value="dark">🌚</option>
+      </select>
+      <script>
+            function setTheme(el) {
+                  const cl = document.querySelector("body").classList;
+                  if (el.value === "dark") {
+                        cl.remove("light-theme");
+                        cl.add("dark-theme");
+                  } else {
+                        cl.remove("dark-theme");
+                        cl.add("light-theme");
+                  }
+                  document.getElementById("theme").value = el.value;
+                  localStorage.setItem("theme", el.value);
+            }
+
+            let theme = localStorage.getItem("theme");
+            if (theme === undefined && window.matchMedia("(prefers-color-scheme: dark)").matches)
+                  theme = "dark";
+            setTheme({ value: theme || "light" });
+      </script>
+
       {{template "page" .}}
 </body>
 

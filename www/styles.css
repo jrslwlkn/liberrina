@@ -1,163 +1,184 @@
+body.dark-theme {
+  --bg-color: #282828;
+  --txt-color: #d1cfcf;
+  --txt-muted-color: #888787;
+  --out-color: #878383;
+  --input-color: #201f1f;
+}
+
+body.light-theme {
+  --bg-color: #f7f5f5;
+  --txt-color: #000000;
+  --txt-muted-color: #7e7d7d;
+  --out-color: #7d7d7d;
+  --input-color: #e9e9ed;
+}
+
 body {
-    font-family: 'Trebuchet MS', 'Helvetica', 'Optima', 'Gill Sans', sans-serif;
+  font-family: "Trebuchet MS", "Helvetica", "Optima", "Gill Sans", sans-serif;
+  background-color: var(--bg-color);
+  color: var(--txt-color);
 }
 
 * {
-    box-sizing: border-box;
-    border: none;
-    border-radius: 5px;
+  box-sizing: border-box;
+  border: none;
 }
 
 button {
-    margin: 10px 0 0 0;
-    padding: 10px;
-    width: 100%;
-    font-weight: bold;
-    background-color: lightgrey;
+  margin: 10px 0 0 0;
+  padding: 10px;
+  width: 100%;
+  font-weight: bold;
+  background-color: var(--input-color);
+  color: var(--txt-color);
+  border: 1px solid var(--out-color);
+  border-radius: 5px;
 }
 
 button:hover {
-    color: #e9e9ed;
-    background-color: grey;
-    cursor: pointer;
+  background-color: var(--out-color);
+  color: var(--bg-color);
+  cursor: pointer;
 }
 
 .container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-gap: 40px;
-    padding: 0 20px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-gap: 40px;
+  padding: 0 20px;
 }
 
 @media screen and (max-width: 600px) {
-    .container {
-        grid-template-columns: 1fr;
-    }
+  .container {
+    grid-template-columns: 1fr;
+  }
 }
 
 .title {
-    border-bottom: 1px solid lightgrey;
-    padding: 20px 0 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  border-bottom: 1px solid var(--out-color);
+  padding: 20px 0 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .title h3 {
-    margin: auto;
+  margin: auto;
 }
 
 ul {
-    padding: 0;
-    list-style: none;
+  padding: 0;
+  list-style: none;
 }
 
 section li {
-    margin-top: 10px;
+  margin-top: 10px;
 }
 
 a {
-    text-decoration: none;
-    color: initial;
+  text-decoration: none;
+  color: initial;
 }
 
 .square-button {
-    width: 30px;
-    height: 30px;
-    border: none;
-    font-size: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 5px;
+  width: 30px;
+  height: 30px;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 form {
-    margin: 20px;
+  margin: 20px;
 }
 
 fieldset {
-    max-width: 800px;
-    padding: 20px;
-    border-radius: 5px;
+  max-width: 800px;
+  padding: 20px;
+  border-radius: 5px;
 }
 
 legend {
-    font-size: large;
-    font-weight: bold;
+  font-size: large;
+  font-weight: bold;
 }
 
 .field {
-    margin: 15px 0;
-    display: flex;
-    justify-content: space-between;
+  margin: 15px 0;
+  display: flex;
+  justify-content: space-between;
 }
 
 .field input,
 .field textarea,
 .field select {
-    float: right;
-    width: 50%;
+  float: right;
+  width: 50%;
 }
 
 .field .desc {
-    font-size: small;
-    color: grey;
-    display: block;
+  font-size: small;
+  color: var(--txt-muted-color);
+  display: block;
 }
 
 .field label {
-    max-width: 50%;
+  max-width: 50%;
+  padding-right: 20px;
 }
 
 @media only screen and (max-width: 600px) {
+  .field,
+  .field label,
+  .field input,
+  .field textarea,
+  .field select {
+    display: block;
+    float: none !important;
+    width: 100% !important;
+  }
 
-    .field,
-    .field label,
-    .field input,
-    .field textarea,
-    .field select {
-        display: block;
-        float: none !important;
-        width: 100% !important;
-    }
-
-    .field label {
-        margin-bottom: 5px;
-        max-width: 100%;
-    }
+  .field label {
+    margin-bottom: 5px;
+    max-width: 100%;
+  }
 }
 
-#result+.field {
-    margin-top: 0;
+#result + .field {
+  margin-top: 0;
 }
 
 #result.error {
-    border: 2px dotted darkred;
-    margin: 0 0 15px 0;
-    padding: 10px;
-    background: pink;
+  border: 2px dotted darkred;
+  margin: 0 0 15px 0;
+  padding: 10px;
+  background: pink;
 }
 
 input::file-selector-button,
+input,
 select,
 input,
 textarea {
-    border: none;
-    padding: 5px;
-    border-radius: 5px;
-    background-color: #e9e9ed;
-    height: fit-content;
+  border: none;
+  padding: 5px;
+  border-radius: 5px;
+  background-color: var(--input-color);
+  height: fit-content;
+  color: var(--txt-color);
+  border: 1px solid var(--out-color);
 }
 
-input[type=file] {
-    border: none;
-    background: transparent;
-    padding: 0;
-    display: flex;
-    align-self: flex-end;
+input[type="file"] {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-self: flex-end;
 }
 
 fieldset {
-    border: 1px solid lightgrey;
+  border: 1px solid var(--out-color);
 }
