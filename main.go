@@ -64,17 +64,21 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	docs, err := query.GetDocs(ctx)
 	if err != nil {
-		log.Fatal(err)
+		render(w, "db-error", err.Error())
+		log.Println("db error:", err.Error())
 	}
 	langs, err := query.GetLangs(ctx)
 	if err != nil {
-		log.Fatal(err)
+		render(w, "db-error", err.Error())
+		log.Println("db error:", err.Error())
 	}
+	log.Println("rendering index")
 	render(w, "index", IndexData{docs, langs})
 }
 
 func handleDoc(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(r.URL.Path, "/")
+	log.Println("requested doc path:", r.URL.Path)
 	if len(parts) != 3 {
 		render(w, "404", nil)
 		return
@@ -89,6 +93,7 @@ func handleDoc(w http.ResponseWriter, r *http.Request) {
 		render(w, "404", nil)
 		return
 	}
+	log.Println("rendering doc", doc.DocID)
 	render(w, "doc", doc)
 }
 
@@ -96,7 +101,8 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		langs, err := query.GetAllLangs(ctx)
 		if err != nil {
-			log.Fatal(err)
+			log.Println("db error:", err.Error())
+			render(w, "db-error", err.Error())
 		}
 		render(w, "add-lang", langs)
 	} else if r.Method == http.MethodPost {
@@ -118,7 +124,7 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 		if sentenceSep == "" {
 			sentenceSep = `[.\?!;]`
 		}
-		_, err := query.AddLang(ctx, queries.AddLangParams{
+		added, err := query.AddLang(ctx, queries.AddLangParams{
 			Name:           form.Get("name"),
 			FromID:         form.Get("from_id"),
 			ToID:           form.Get("to_id"),
@@ -127,48 +133,41 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			LookupURI2:     lookupURI2,
 			CharsPattern:   charsPattern,
 			SentenceSep:    sentenceSep,
+			UserID:         0, // TODO
 		})
 		if err != nil {
-			w.Write([]byte(
-				"<div id='result' class='field error'><b>Database Error</b><br><br><code>" +
-					err.Error() +
-					"</code></div>"))
-			fmt.Println("error: ", err.Error())
+			log.Println("db error:", err.Error())
+			render(w, "db-error", err.Error())
 		} else {
-			w.Write([]byte(`
-				<div id="result">
-					<b>✅ Success!</b></br><br>
-					Go <a href="/">home</a>.
-				</div>
-				<style> .field, button { display: none } </style>`,
-			))
+			log.Println("added lang", added.Name)
+			render(w, "success", nil)
 		}
 	}
 }
 
 func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		langs, err := query.GetAllLangs(ctx)
+		langs, err := query.GetLangs(ctx)
 		if err != nil {
-			log.Fatal(err)
+			log.Println("db error:", err.Error())
+			render(w, "db-error", err.Error())
 		}
 		render(w, "add-doc", langs)
 	} else if r.Method == http.MethodPost {
-		r.ParseForm()
+		r.ParseMultipartForm(20 << 20) // 20 MB limit
 		form := r.Form
-		fmt.Println(form)
 
+		// TODO: add these
 		// author := sql.NullString{String: form.Get("author"), Valid: true}
 		// tags := sql.NullString{String: form.Get("tags"), Valid: true}
 		// notes := sql.NullString{String: form.Get("notes"), Valid: true}
 
-		body := form.Get("doc_body")
-		// fmt.Println("body is: ", body)
+		body := strings.TrimSpace(form.Get("doc_body"))
 		if body == "" {
-			r.ParseMultipartForm(20 << 20) // 20 MB limit
 			file, _, err := r.FormFile("doc_file")
 			if err != nil {
-				log.Fatal(err)
+				log.Println("error:", err.Error())
+				render(w, "app-error", err.Error())
 				return
 			}
 			defer file.Close()
@@ -180,90 +179,110 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 			if !certain && enc == "windows-1252" {
 				enc = "windows-1251"
 			}
+			file.Seek(0, 0)
 
 			reader, err := charset.NewReaderLabel(enc, file)
 			if err != nil {
-				log.Fatal(err)
+				log.Println("error:", err.Error())
+				render(w, "app-error", err.Error())
+				return
 			}
 			fileBytes, err := io.ReadAll(reader)
 			if err != nil {
-				log.Fatal(err)
+				log.Println("error:", err.Error())
+				render(w, "app-error", err.Error())
+				return
 			}
 
-			body := string(fileBytes)
-			re := regexp.MustCompile(`[A-Za-z'А-Яа-я'ґЃєЄїЇіІ]`)
-
-			var i int64 = 1
-			var chunks []queries.AddChunkParams
-			var cur queries.AddChunkParams
-			var inTerm bool = false
-			var builder strings.Builder
-
-			for _, x := range strings.Split(body, "") {
-				if re.MatchString(x) {
-					if inTerm {
-						// NOTE: keep growing the term
-						builder.WriteString(x)
-					} else {
-						inTerm = true
-						// NOTE: this is the end of suffix
-						cur.Suffix = builder.String()
-						if cur.Value != "" || cur.Suffix != "" {
-							chunks = append(chunks, cur)
-							builder.Reset()
-							i++
-						}
-						// create another particle
-						cur = queries.AddChunkParams{Position: i, DocID: 0} // TODO: use actual document ID
-						builder.WriteString(x)
-					}
-				} else {
-					if inTerm {
-						// NOTE: this is the end of the term
-						inTerm = false
-						cur.Value = builder.String()
-						builder.Reset()
-						builder.WriteString(x)
-					} else {
-						// NOTE: keep growing the suffix
-						builder.WriteString(x)
-					}
-				}
-			}
-
-			if inTerm {
-				cur.Value = builder.String()
-			} else {
-				cur.Suffix = builder.String()
-			}
-			chunks = append(chunks, cur)
-
-			if err := query.PruneChunks(ctx, 0); err != nil { // TODO: use actual document ID
-				log.Fatal(err)
-			}
-
-			start := time.Now()
-			tx, err := db.Begin()
-			if err != nil {
-				log.Fatal(err)
-			}
-			qtx := query.WithTx(tx)
-			for _, chunk := range chunks { // TODO: any better way to avoid storing all these in memory?
-				err = qtx.PruneChunks(ctx, 0)
-				if err != nil {
-					log.Fatal(err)
-				}
-				_, err := qtx.AddChunk(ctx, chunk)
-				if err != nil {
-					log.Fatal(err)
-				}
-				// fmt.Printf("i: %d, value: '%s', suffix: '%s'\n", x.Index, x.Value, x.Suffix)
-			}
-			if err := tx.Commit(); err != nil {
-				log.Fatal(err)
-			}
-			log.Println("inserted in ", time.Since(start))
+			body = strings.TrimSpace(string(fileBytes))
 		}
+		re := regexp.MustCompile(`[A-Za-z'А-Яа-я'ґЃєЄїЇіІ]`)
+
+		var i int64 = 1
+		var chunks []queries.AddChunkParams
+		var cur queries.AddChunkParams
+		var inTerm bool = false
+		var builder strings.Builder
+
+		for _, x := range strings.Split(body, "") {
+			if re.MatchString(x) {
+				if inTerm {
+					// NOTE: keep growing the term
+					builder.WriteString(x)
+				} else {
+					inTerm = true
+					// NOTE: this is the end of suffix
+					cur.Suffix = builder.String()
+					if cur.Value != "" || cur.Suffix != "" {
+						chunks = append(chunks, cur)
+						builder.Reset()
+						i++
+					}
+					// create another particle
+					cur = queries.AddChunkParams{Position: i, DocID: 0} // TODO: use actual document ID
+					builder.WriteString(x)
+				}
+			} else {
+				if inTerm {
+					// NOTE: this is the end of the term
+					inTerm = false
+					cur.Value = builder.String()
+					builder.Reset()
+					builder.WriteString(x)
+				} else {
+					// NOTE: keep growing the suffix
+					builder.WriteString(x)
+				}
+			}
+		}
+
+		if inTerm {
+			cur.Value = builder.String()
+		} else {
+			cur.Suffix = builder.String()
+		}
+		chunks = append(chunks, cur)
+
+		// FIXME: this is for testing only
+		if err := query.PruneChunks(ctx, 0); err != nil {
+			log.Fatal(err)
+		}
+
+		start := time.Now()
+		tx, err := db.Begin()
+		if err != nil {
+			log.Println("db error:", err.Error())
+			render(w, "db-error", err.Error())
+			return
+		}
+		// TODO: insert document here in transaction
+		// TODO: do not accumulate chunks, instead insert them as they are parsed
+		qtx := query.WithTx(tx)
+		for i, chunk := range chunks {
+			err = qtx.PruneChunks(ctx, 0)
+			if err != nil {
+				log.Println("db error:", err.Error())
+				render(w, "db-error", err.Error())
+				return
+			}
+			_, err := qtx.AddChunk(ctx, chunk)
+			if err != nil {
+				log.Println("db error:", i, chunk, err.Error())
+				render(w, "db-error", err.Error())
+				return
+			}
+			if i < 20 {
+				fmt.Printf("i: %d, value: '%s', suffix: '%s'\n", i, chunk.Value, chunk.Suffix)
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			log.Println("db error:", err.Error())
+			render(w, "db-error", err.Error())
+			return
+		}
+
+		log.Println("inserted", len(chunks), "in", time.Since(start))
+		render(w, "success", nil)
 	}
 }
 
@@ -278,7 +297,7 @@ func render(w http.ResponseWriter, name string, data interface{}) {
 }
 
 func handleStatic(w http.ResponseWriter, r *http.Request) {
-	if strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".ico") || strings.HasSuffix(r.URL.Path, ".jpg") {
+	if strings.HasSuffix(r.URL.Path, ".css") || strings.HasSuffix(r.URL.Path, ".ico") || strings.HasSuffix(r.URL.Path, ".jpg") || strings.HasSuffix(r.URL.Path, ".js") {
 		fs.ServeHTTP(w, r)
 	} else {
 		render(w, "404", nil)
