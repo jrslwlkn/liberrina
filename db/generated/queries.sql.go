@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const addChunk = `-- name: AddChunk :one
+const addChunk = `-- name: AddChunk :exec
 insert into
     chunks (
         doc_id,
@@ -19,7 +19,7 @@ insert into
         suffix
     )
 values
-    (?1, ?2, ?3, ?4) returning doc_id, position, value, suffix
+    (?1, ?2, ?3, ?4)
 `
 
 type AddChunkParams struct {
@@ -29,21 +29,66 @@ type AddChunkParams struct {
 	Suffix   string
 }
 
-func (q *Queries) AddChunk(ctx context.Context, arg AddChunkParams) (Chunk, error) {
-	row := q.db.QueryRowContext(ctx, addChunk,
+func (q *Queries) AddChunk(ctx context.Context, arg AddChunkParams) error {
+	_, err := q.db.ExecContext(ctx, addChunk,
 		arg.DocID,
 		arg.Position,
 		arg.Value,
 		arg.Suffix,
 	)
-	var i Chunk
-	err := row.Scan(
-		&i.DocID,
-		&i.Position,
-		&i.Value,
-		&i.Suffix,
+	return err
+}
+
+const addDoc = `-- name: AddDoc :one
+insert into
+    docs(
+        title,
+        author,
+        body,
+        notes,
+        lang_id,
+        user_id,
+        added_at,
+        term_count,
+        sentence_count,
+        terms_new
+    )
+values
+    (
+        ?1,
+        ?2,
+        ?3,
+        ?4,
+        ?5,
+        ?6,
+        datetime(),
+        0,
+        0,
+        0
+    ) returning doc_id
+`
+
+type AddDocParams struct {
+	Title  string
+	Author string
+	Body   string
+	Notes  string
+	LangID int64
+	UserID int64
+}
+
+func (q *Queries) AddDoc(ctx context.Context, arg AddDocParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, addDoc,
+		arg.Title,
+		arg.Author,
+		arg.Body,
+		arg.Notes,
+		arg.LangID,
+		arg.UserID,
 	)
-	return i, err
+	var doc_id int64
+	err := row.Scan(&doc_id)
+	return doc_id, err
 }
 
 const addLang = `-- name: AddLang :one
@@ -72,7 +117,7 @@ values
         ?8,
         datetime(),
         ?9
-    ) returning lang_id, name, from_id, to_id, quick_lookup_uri, lookup_uri_1, lookup_uri_2, chars_pattern, sentence_sep, user_id, added_at
+    ) returning lang_id
 `
 
 type AddLangParams struct {
@@ -87,7 +132,7 @@ type AddLangParams struct {
 	UserID         int64
 }
 
-func (q *Queries) AddLang(ctx context.Context, arg AddLangParams) (Lang, error) {
+func (q *Queries) AddLang(ctx context.Context, arg AddLangParams) (int64, error) {
 	row := q.db.QueryRowContext(ctx, addLang,
 		arg.Name,
 		arg.FromID,
@@ -99,21 +144,55 @@ func (q *Queries) AddLang(ctx context.Context, arg AddLangParams) (Lang, error) 
 		arg.SentenceSep,
 		arg.UserID,
 	)
-	var i Lang
-	err := row.Scan(
-		&i.LangID,
-		&i.Name,
-		&i.FromID,
-		&i.ToID,
-		&i.QuickLookupUri,
-		&i.LookupUri1,
-		&i.LookupUri2,
-		&i.CharsPattern,
-		&i.SentenceSep,
-		&i.UserID,
-		&i.AddedAt,
-	)
-	return i, err
+	var lang_id int64
+	err := row.Scan(&lang_id)
+	return lang_id, err
+}
+
+const addTerms = `-- name: AddTerms :exec
+insert into
+    terms(
+        value,
+        translation,
+        term_level_id,
+        lang_id,
+        user_id,
+        added_at
+    )
+select
+    value,
+    '',
+    1,
+    d.lang_id,
+    d.user_id,
+    datetime()
+from
+    chunks c
+    join docs d on c.doc_id = d.doc_id
+where
+    d.doc_id = ?1
+    and not exists (
+        select
+            value
+        from
+            terms
+        where
+            user_id = (
+                select
+                    user_id
+                from
+                    docs
+                where
+                    doc_id = @doc_id
+            )
+    )
+group by
+    value
+`
+
+func (q *Queries) AddTerms(ctx context.Context, docID int64) error {
+	_, err := q.db.ExecContext(ctx, addTerms, docID)
+	return err
 }
 
 const getAllLangs = `-- name: GetAllLangs :many
@@ -275,6 +354,27 @@ func (q *Queries) GetLangs(ctx context.Context) ([]GetLangsRow, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const initDoc = `-- name: InitDoc :exec
+update
+    docs
+set
+    term_count = ?1,
+    sentence_count = ?2
+where
+    doc_id = ?3
+`
+
+type InitDocParams struct {
+	TermCount     int64
+	SentenceCount int64
+	DocID         int64
+}
+
+func (q *Queries) InitDoc(ctx context.Context, arg InitDocParams) error {
+	_, err := q.db.ExecContext(ctx, initDoc, arg.TermCount, arg.SentenceCount, arg.DocID)
+	return err
 }
 
 const pruneChunks = `-- name: PruneChunks :exec

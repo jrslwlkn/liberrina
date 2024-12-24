@@ -108,14 +108,6 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 	} else if r.Method == http.MethodPost {
 		r.ParseForm()
 		form := r.Form
-		lookupURI1 := sql.NullString{String: form.Get("lookup_uri_1"), Valid: true}
-		if lookupURI1.String != "" {
-			lookupURI1.String = form.Get("lookup_uri_1")
-		}
-		lookupURI2 := sql.NullString{String: form.Get("lookup_uri_2"), Valid: true}
-		if lookupURI2.String != "" {
-			lookupURI2.String = form.Get("lookup_uri_2")
-		}
 		charsPattern := form.Get("chars_pattern")
 		if charsPattern == "" {
 			charsPattern = `[^A-Za-z'-]`
@@ -124,13 +116,13 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 		if sentenceSep == "" {
 			sentenceSep = `[.\?!;]`
 		}
-		added, err := query.AddLang(ctx, queries.AddLangParams{
+		addedID, err := query.AddLang(ctx, queries.AddLangParams{
 			Name:           form.Get("name"),
 			FromID:         form.Get("from_id"),
 			ToID:           form.Get("to_id"),
 			QuickLookupURI: form.Get("quick_lookup_uri"),
-			LookupURI1:     lookupURI1,
-			LookupURI2:     lookupURI2,
+			LookupURI1:     form.Get("lookup_uri_1"),
+			LookupURI2:     form.Get("lookup_uri_2"),
 			CharsPattern:   charsPattern,
 			SentenceSep:    sentenceSep,
 			UserID:         0, // TODO
@@ -139,7 +131,7 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			log.Println("db error:", err.Error())
 			render(w, "db-error", err.Error())
 		} else {
-			log.Println("added lang", added.Name)
+			log.Println("added lang", addedID)
 			render(w, "success", nil)
 		}
 	}
@@ -265,7 +257,7 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 				render(w, "db-error", err.Error())
 				return
 			}
-			_, err := qtx.AddChunk(ctx, chunk)
+			err := qtx.AddChunk(ctx, chunk)
 			if err != nil {
 				log.Println("db error:", i, chunk, err.Error())
 				render(w, "db-error", err.Error())

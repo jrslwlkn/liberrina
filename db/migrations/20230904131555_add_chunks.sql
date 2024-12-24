@@ -3,7 +3,7 @@
 create table chunks (
 		doc_id integer not null,
 		position integer not null,
-		value string not null,
+		value string collate nocase not null,
 		suffix string not null,
 
 		PRIMARY KEY (doc_id, position)
