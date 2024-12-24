@@ -12,8 +12,8 @@ import (
 type Chunk struct {
 	DocID    int64
 	Position int64
-	Value    interface{}
-	Suffix   interface{}
+	Value    string
+	Suffix   string
 }
 
 type Doc struct {

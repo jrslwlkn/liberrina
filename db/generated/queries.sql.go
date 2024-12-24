@@ -26,8 +26,8 @@ values
 type AddChunkParams struct {
 	DocID    int64
 	Position int64
-	Value    interface{}
-	Suffix   interface{}
+	Value    string
+	Suffix   string
 }
 
 func (q *Queries) AddChunk(ctx context.Context, arg AddChunkParams) (Chunk, error) {
@@ -58,7 +58,8 @@ insert into
         lookup_uri_2,
         chars_pattern,
         sentence_sep,
-        added_at
+        added_at,
+        user_id
     )
 values
     (
@@ -70,7 +71,8 @@ values
         ?6,
         ?7,
         ?8,
-        datetime()
+        datetime(),
+        ?9
     ) returning lang_id, name, from_id, to_id, quick_lookup_uri, lookup_uri_1, lookup_uri_2, chars_pattern, sentence_sep, user_id, added_at
 `
 
@@ -83,6 +85,7 @@ type AddLangParams struct {
 	LookupURI2     sql.NullString
 	CharsPattern   string
 	SentenceSep    string
+	UserID         int64
 }
 
 func (q *Queries) AddLang(ctx context.Context, arg AddLangParams) (Lang, error) {
@@ -95,6 +98,7 @@ func (q *Queries) AddLang(ctx context.Context, arg AddLangParams) (Lang, error) 
 		arg.LookupURI2,
 		arg.CharsPattern,
 		arg.SentenceSep,
+		arg.UserID,
 	)
 	var i Lang
 	err := row.Scan(

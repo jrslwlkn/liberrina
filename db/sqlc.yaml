@@ -8,3 +8,7 @@ sql:
         package: "queries"
         out: "generated"
         sql_package: "mattn/go-sqlite3"
+        overrides:
+          - db_type: "string"
+            go_type:
+              type: "string"
