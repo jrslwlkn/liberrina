@@ -8,7 +8,8 @@ select
     terms_new,
     sentence_count
 from
-    docs;
+    docs
+where user_id = @user_id;
 
 -- name: GetAllLangs :many
 select
@@ -22,7 +23,8 @@ select
     lang_id,
     name
 from
-    langs;
+    langs
+where user_id = @user_id;
 
 -- name: GetDocByID :one
 select
@@ -94,21 +96,6 @@ values
         0
     ) returning doc_id;
 
--- name: InitDoc :exec
-update
-    docs
-set
-    term_count = @term_count,
-    sentence_count = @sentence_count
-where
-    doc_id = @doc_id;
-
--- name: PruneChunks :exec
-delete from
-    chunks
-where
-    doc_id = @doc_id;
-
 -- name: AddChunk :exec
 insert into
     chunks (
@@ -154,8 +141,17 @@ where
                 from
                     docs
                 where
-                    doc_id = @doc_id
+                    doc_id = d.doc_id
             )
     )
 group by
     value;
+
+-- name: UpdateDocStats :exec
+update
+    docs
+set
+    term_count = @term_count,
+    sentence_count = @sentence_count
+where
+    doc_id = @doc_id;

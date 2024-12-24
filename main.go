@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -62,15 +61,22 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		render(w, "404", nil)
 		return
 	}
-	docs, err := query.GetDocs(ctx)
+	docs, err := query.GetDocs(ctx, 0) // TODO: add users
 	if err != nil {
 		render(w, "db-error", err.Error())
-		log.Println("db error:", err.Error())
+		log.Println("db error when trying to get docs in index:", err.Error())
+		return
 	}
-	langs, err := query.GetLangs(ctx)
+	for i := range docs {
+		if docs[i].Author == "" {
+			docs[i].Author = "[No Author]"
+		}
+	}
+	langs, err := query.GetLangs(ctx, 0) // TODO: add users
 	if err != nil {
 		render(w, "db-error", err.Error())
-		log.Println("db error:", err.Error())
+		log.Println("db error when trying to get langs in index:", err.Error())
+		return
 	}
 	log.Println("rendering index")
 	render(w, "index", IndexData{docs, langs})
@@ -101,7 +107,7 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		langs, err := query.GetAllLangs(ctx)
 		if err != nil {
-			log.Println("db error:", err.Error())
+			log.Println("db error when trying to get all langs (adding new):", err.Error())
 			render(w, "db-error", err.Error())
 		}
 		render(w, "add-lang", langs)
@@ -128,7 +134,7 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			UserID:         0, // TODO
 		})
 		if err != nil {
-			log.Println("db error:", err.Error())
+			log.Println("db error when adding lang:", err.Error())
 			render(w, "db-error", err.Error())
 		} else {
 			log.Println("added lang", addedID)
@@ -139,9 +145,9 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 
 func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		langs, err := query.GetLangs(ctx)
+		langs, err := query.GetLangs(ctx, 0)
 		if err != nil {
-			log.Println("db error:", err.Error())
+			log.Println("db error when trying to get langs (adding doc):", err.Error())
 			render(w, "db-error", err.Error())
 		}
 		render(w, "add-doc", langs)
@@ -149,16 +155,11 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 		r.ParseMultipartForm(20 << 20) // 20 MB limit
 		form := r.Form
 
-		// TODO: add these
-		// author := sql.NullString{String: form.Get("author"), Valid: true}
-		// tags := sql.NullString{String: form.Get("tags"), Valid: true}
-		// notes := sql.NullString{String: form.Get("notes"), Valid: true}
-
 		body := strings.TrimSpace(form.Get("doc_body"))
 		if body == "" {
 			file, _, err := r.FormFile("doc_file")
 			if err != nil {
-				log.Println("error:", err.Error())
+				log.Println("error when getting form field doc_file:", err.Error())
 				render(w, "app-error", err.Error())
 				return
 			}
@@ -175,13 +176,13 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 
 			reader, err := charset.NewReaderLabel(enc, file)
 			if err != nil {
-				log.Println("error:", err.Error())
+				log.Println("error when creating new reader label for charset (adding doc):", err.Error())
 				render(w, "app-error", err.Error())
 				return
 			}
 			fileBytes, err := io.ReadAll(reader)
 			if err != nil {
-				log.Println("error:", err.Error())
+				log.Println("error when reading full body (adding doc):", err.Error())
 				render(w, "app-error", err.Error())
 				return
 			}
@@ -191,10 +192,40 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 		re := regexp.MustCompile(`[A-Za-z'А-Яа-я'ґЃєЄїЇіІ]`)
 
 		var i int64 = 1
-		var chunks []queries.AddChunkParams
 		var cur queries.AddChunkParams
 		var inTerm bool = false
 		var builder strings.Builder
+
+		start := time.Now()
+		tx, err := db.Begin()
+		if err != nil {
+			log.Println("db error when trying to start a transaction:", err.Error())
+			render(w, "db-error", err.Error())
+			return
+		}
+		defer tx.Rollback()
+
+		qtx := query.WithTx(tx)
+
+		langID, err := strconv.Atoi(form.Get("lang_id"))
+		if err != nil {
+			log.Println("error when trying to get int value lang_id from from (adding doc):", err.Error())
+			render(w, "app-error", err.Error())
+			return
+		}
+
+		docID, err := qtx.AddDoc(ctx, queries.AddDocParams{
+			Title:  form.Get("title"),
+			Author: form.Get("author"),
+			Notes:  form.Get("notes"),
+			LangID: int64(langID),
+			UserID: 0, // TODO: add users
+		})
+		if err != nil {
+			log.Println("db error when trying to add doc:", err.Error())
+			render(w, "db-error", err.Error())
+			return
+		}
 
 		for _, x := range strings.Split(body, "") {
 			if re.MatchString(x) {
@@ -206,12 +237,17 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 					// NOTE: this is the end of suffix
 					cur.Suffix = builder.String()
 					if cur.Value != "" || cur.Suffix != "" {
-						chunks = append(chunks, cur)
+						err := qtx.AddChunk(ctx, cur)
+						if err != nil {
+							log.Println("db error when trying to add chunk:", err.Error())
+							render(w, "db-error", err.Error())
+							return
+						}
 						builder.Reset()
 						i++
 					}
 					// create another particle
-					cur = queries.AddChunkParams{Position: i, DocID: 0} // TODO: use actual document ID
+					cur = queries.AddChunkParams{Position: i, DocID: docID}
 					builder.WriteString(x)
 				}
 			} else {
@@ -233,47 +269,32 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 		} else {
 			cur.Suffix = builder.String()
 		}
-		chunks = append(chunks, cur)
+		err = qtx.AddChunk(ctx, cur)
+		if err != nil {
+			log.Println("db error when trying to add chunk at the very end:", err.Error())
+			render(w, "db-error", err.Error())
+			return
+		}
 
 		// FIXME: this is for testing only
-		if err := query.PruneChunks(ctx, 0); err != nil {
-			log.Fatal(err)
-		}
+		// if err := query.PruneChunks(ctx, 0); err != nil {
+		// 	log.Fatal(err)
+		// }
 
-		start := time.Now()
-		tx, err := db.Begin()
+		err = qtx.AddTerms(ctx, docID)
 		if err != nil {
-			log.Println("db error:", err.Error())
-			render(w, "db-error", err.Error())
-			return
-		}
-		// TODO: insert document here in transaction
-		// TODO: do not accumulate chunks, instead insert them as they are parsed
-		qtx := query.WithTx(tx)
-		for i, chunk := range chunks {
-			err = qtx.PruneChunks(ctx, 0)
-			if err != nil {
-				log.Println("db error:", err.Error())
-				render(w, "db-error", err.Error())
-				return
-			}
-			err := qtx.AddChunk(ctx, chunk)
-			if err != nil {
-				log.Println("db error:", i, chunk, err.Error())
-				render(w, "db-error", err.Error())
-				return
-			}
-			if i < 20 {
-				fmt.Printf("i: %d, value: '%s', suffix: '%s'\n", i, chunk.Value, chunk.Suffix)
-			}
-		}
-		if err := tx.Commit(); err != nil {
-			log.Println("db error:", err.Error())
+			log.Println("db error when adding terms (adding doc):", err.Error())
 			render(w, "db-error", err.Error())
 			return
 		}
 
-		log.Println("inserted", len(chunks), "in", time.Since(start))
+		if err := tx.Commit(); err != nil {
+			log.Println("db error when trying to commit transaction for adding doc:", err.Error())
+			render(w, "db-error", err.Error())
+			return
+		}
+
+		log.Println("inserted", i, "in", time.Since(start))
 		render(w, "success", nil)
 	}
 }

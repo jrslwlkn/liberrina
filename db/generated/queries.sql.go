@@ -183,7 +183,7 @@ where
                 from
                     docs
                 where
-                    doc_id = @doc_id
+                    doc_id = d.doc_id
             )
     )
 group by
@@ -277,6 +277,7 @@ select
     sentence_count
 from
     docs
+where user_id = ?1
 `
 
 type GetDocsRow struct {
@@ -289,8 +290,8 @@ type GetDocsRow struct {
 	SentenceCount int64
 }
 
-func (q *Queries) GetDocs(ctx context.Context) ([]GetDocsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getDocs)
+func (q *Queries) GetDocs(ctx context.Context, userID int64) ([]GetDocsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getDocs, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -326,6 +327,7 @@ select
     name
 from
     langs
+where user_id = ?1
 `
 
 type GetLangsRow struct {
@@ -333,8 +335,8 @@ type GetLangsRow struct {
 	Name   string
 }
 
-func (q *Queries) GetLangs(ctx context.Context) ([]GetLangsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getLangs)
+func (q *Queries) GetLangs(ctx context.Context, userID int64) ([]GetLangsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getLangs, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +358,7 @@ func (q *Queries) GetLangs(ctx context.Context) ([]GetLangsRow, error) {
 	return items, nil
 }
 
-const initDoc = `-- name: InitDoc :exec
+const updateDocStats = `-- name: UpdateDocStats :exec
 update
     docs
 set
@@ -366,25 +368,13 @@ where
     doc_id = ?3
 `
 
-type InitDocParams struct {
+type UpdateDocStatsParams struct {
 	TermCount     int64
 	SentenceCount int64
 	DocID         int64
 }
 
-func (q *Queries) InitDoc(ctx context.Context, arg InitDocParams) error {
-	_, err := q.db.ExecContext(ctx, initDoc, arg.TermCount, arg.SentenceCount, arg.DocID)
-	return err
-}
-
-const pruneChunks = `-- name: PruneChunks :exec
-delete from
-    chunks
-where
-    doc_id = ?1
-`
-
-func (q *Queries) PruneChunks(ctx context.Context, docID int64) error {
-	_, err := q.db.ExecContext(ctx, pruneChunks, docID)
+func (q *Queries) UpdateDocStats(ctx context.Context, arg UpdateDocStatsParams) error {
+	_, err := q.db.ExecContext(ctx, updateDocStats, arg.TermCount, arg.SentenceCount, arg.DocID)
 	return err
 }
