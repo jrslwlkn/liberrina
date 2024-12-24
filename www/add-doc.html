@@ -6,11 +6,10 @@
 
 <form hx-post="/add-doc"
       hx-swap="outerHTML"
-      hx-target="#result"
+      hx-target="this"
       enctype="multipart/form-data">
     <fieldset>
         <legend>Add new document</legend>
-        <div id="result"></div>
         <div class="field">
             <label for="lang_id">
                 Language pair:
@@ -20,7 +19,7 @@
                     required>
                 <option value>Select one...</option>
                 {{range .}}
-                <option value="{{.ID}}">{{.Name}}</option>
+                <option value="{{.LangID}}">{{.Name}}</option>
                 {{end}}
             </select>
         </div>
@@ -38,7 +37,6 @@
         <div class="field">
             <label for="tags">Tags:</label>
             <input type="text"
-                   style="font-family: monospace;"
                    name="tags">
         </div>
         <div class="field">
@@ -54,8 +52,7 @@
             </label>
             <textarea name="doc_body"
                       rows="4"
-                      style="display: block; resize: vertical; width: 100%; margin: 10px 0 20px;">
-            </textarea>
+                      style="display: block; resize: vertical; width: 100%; margin: 10px 0 20px;"></textarea>
         </div>
         <strong>OR</strong>
         <div class="field">

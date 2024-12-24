@@ -15,9 +15,9 @@
     <section>
         <div class="title">
             <h3>Documents</h3>
-            <a href="/add-doc">
-                <button class="square-button"
-                        title="Add new document">+</button>
+            <a href="/add-doc"
+               class="square-button"
+               title="Add new document">+
             </a>
         </div>
         <ul>
@@ -30,14 +30,15 @@
     <section>
         <div class="title">
             <h3>Language Pairs</h3>
-            <a href="/add-lang">
-                <button class="square-button"
-                        title="Add new language">+</button>
+            <a href="/add-lang"
+               class="square-button"
+               title="Add new language pair">+
             </a>
         </div>
         <ul>
-            <li>Language 1</li>
-            <li>Language 2</li>
+            {{range .Langs}}
+            <li>{{.Name}}</li>
+            {{end}}
         </ul>
     </section>
 </div>

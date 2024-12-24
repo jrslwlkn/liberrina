@@ -25,6 +25,7 @@
 <body hx-boost="true">
       <select id="theme"
               onchange="setTheme(this)">
+            <option hidden disabled selected></option>
             <option value="light">🌞</option>
             <option value="dark">🌚</option>
       </select>
@@ -42,10 +43,12 @@
                   localStorage.setItem("theme", el.value);
             }
 
-            let theme = localStorage.getItem("theme");
-            if (theme === undefined && window.matchMedia("(prefers-color-scheme: dark)").matches)
-                  theme = "dark";
-            setTheme({ value: theme || "light" });
+            (function init() {
+                  let theme = localStorage.getItem("theme");
+                  if (theme === undefined && window.matchMedia("(prefers-color-scheme: dark)").matches)
+                        theme = "dark";
+                  setTheme({ value: theme || "light" });
+            })();
       </script>
 
       {{template "page" .}}

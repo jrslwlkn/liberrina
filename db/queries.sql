@@ -49,7 +49,8 @@ insert into
         lookup_uri_2,
         chars_pattern,
         sentence_sep,
-        added_at
+        added_at,
+        user_id
     )
 values
     (
@@ -61,7 +62,8 @@ values
         @lookup_URI_2,
         @chars_pattern,
         @sentence_sep,
-        datetime()
+        datetime(),
+        @user_id
     ) returning *;
 
 -- name: PruneChunks :exec

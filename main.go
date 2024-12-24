@@ -36,10 +36,13 @@ func main() {
 	query = queries.New(db)
 	ctx = context.Background()
 
-	templs["404"] = template.Must(template.ParseFiles("www/404.html"))
+	templs["404"] = template.Must(template.ParseFiles("www/page-layout.html", "www/404.html"))
 	templs["index"] = template.Must(template.ParseFiles("www/page-layout.html", "www/index.html"))
 	templs["add-lang"] = template.Must(template.ParseFiles("www/page-layout.html", "www/add-lang.html"))
 	templs["add-doc"] = template.Must(template.ParseFiles("www/page-layout.html", "www/add-doc.html"))
+	templs["db-error"] = template.Must(template.ParseFiles("www/db-error.html"))
+	templs["app-error"] = template.Must(template.ParseFiles("www/app-error.html"))
+	templs["success"] = template.Must(template.ParseFiles("www/success.html"))
 	templs["doc"] = template.Must(template.ParseFiles("www/page-layout.html", "www/doc.html"))
 
 	fs = http.StripPrefix("/www/", http.FileServer(http.Dir("www")))
