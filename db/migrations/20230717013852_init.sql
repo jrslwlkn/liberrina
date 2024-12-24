@@ -51,7 +51,7 @@ create table term_levels (
 
 create table terms (
 	term_id integer not null primary key autoincrement,
-	value text not null,  
+	value text collate nocase not null,  
 	translation text not null,
 	term_level_id integer not null references term_levels(term_level_id),
 	lang_id integer not null references langs(lang_id),
@@ -60,7 +60,7 @@ create table terms (
 );
 create index idx_terms_user_id on terms(user_id);
 create index idx_terms_lang_id on terms(lang_id);
-create index idx_terms_lowercase_value on terms(lower(value));
+create index idx_terms_value on terms(value);
 	
 create table sentences (
 	sentence_id integer not null primary key autoincrement,

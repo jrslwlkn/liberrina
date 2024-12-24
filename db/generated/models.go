@@ -19,9 +19,9 @@ type Chunk struct {
 type Doc struct {
 	DocID         int64
 	Title         string
-	Author        sql.NullString
+	Author        string
 	Body          string
-	Notes         sql.NullString
+	Notes         string
 	LangID        int64
 	UserID        int64
 	AddedAt       time.Time
@@ -47,8 +47,8 @@ type Lang struct {
 	FromID         string
 	ToID           string
 	QuickLookupUri string
-	LookupUri1     sql.NullString
-	LookupUri2     sql.NullString
+	LookupUri1     string
+	LookupUri2     string
 	CharsPattern   string
 	SentenceSep    string
 	UserID         int64

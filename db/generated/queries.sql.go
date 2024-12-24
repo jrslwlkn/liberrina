@@ -7,7 +7,6 @@ package queries
 
 import (
 	"context"
-	"database/sql"
 	"time"
 )
 
@@ -81,8 +80,8 @@ type AddLangParams struct {
 	FromID         string
 	ToID           string
 	QuickLookupURI string
-	LookupURI1     sql.NullString
-	LookupURI2     sql.NullString
+	LookupURI1     string
+	LookupURI2     string
 	CharsPattern   string
 	SentenceSep    string
 	UserID         int64
@@ -166,7 +165,7 @@ where
 type GetDocByIDRow struct {
 	DocID         int64
 	Title         string
-	Author        sql.NullString
+	Author        string
 	AddedAt       time.Time
 	TermCount     int64
 	TermsNew      int64
@@ -204,7 +203,7 @@ from
 type GetDocsRow struct {
 	DocID         int64
 	Title         string
-	Author        sql.NullString
+	Author        string
 	AddedAt       time.Time
 	TermCount     int64
 	TermsNew      int64

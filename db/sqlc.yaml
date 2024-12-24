@@ -12,3 +12,8 @@ sql:
           - db_type: "string"
             go_type:
               type: "string"
+          - db_type: "text"
+            nullable: true
+            go_type:
+              type: "string"
+            

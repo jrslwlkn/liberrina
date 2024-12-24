@@ -30,7 +30,7 @@
 1. Run migrations:
     ```
     cd db
-    goose -dir migrations sqlite3 app.db up
+    goose -dir migrations sqlite3 ../app.db up
     ```
 1. Generate Go from SQL queries (if queries are added/updated in `db/queries.sql`)
 
