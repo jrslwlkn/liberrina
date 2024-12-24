@@ -17,7 +17,6 @@ body.light-theme {
 body {
   font-family: "Trebuchet MS", "Helvetica", "Optima", "Gill Sans", sans-serif;
   background-color: var(--bg-color);
-  color: var(--txt-color);
   max-width: 800px;
   margin: auto;
 }
@@ -25,26 +24,33 @@ body {
 * {
   box-sizing: border-box;
   border: none;
+  color: var(--txt-color);
 }
 
 #theme {
   font-size: x-large;
   display: block;
-  margin: 15px;
+  margin-top: 15px;
 }
 
-button {
+a {
+  text-decoration: underline;
+}
+
+button,
+.square-button {
   margin: 10px 0 0 0;
   padding: 10px;
   width: 100%;
   font-weight: bold;
   background-color: var(--input-color);
-  color: var(--txt-color);
   border: 1px solid var(--out-color);
   border-radius: 5px;
+  text-decoration: none;
 }
 
-button:hover {
+button:hover,
+.square-button:hover {
   background-color: var(--out-color);
   color: var(--bg-color);
   cursor: pointer;
@@ -54,7 +60,7 @@ button:hover {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-gap: 40px;
-  padding: 0 20px;
+  padding: 0;
 }
 
 @media screen and (max-width: 600px) {
@@ -84,11 +90,6 @@ section li {
   margin-top: 10px;
 }
 
-a {
-  text-decoration: none;
-  color: initial;
-}
-
 .square-button {
   width: 30px;
   height: 30px;
@@ -99,7 +100,7 @@ a {
 }
 
 form {
-  margin: 20px;
+  margin-top: 20px;
 }
 
 fieldset {
@@ -154,15 +155,24 @@ legend {
   }
 }
 
+#result {
+  margin: 20px 0;
+  padding: 10px;
+  display: block;
+  text-align: center;
+  border-radius: 5px;
+}
+
 #result + .field {
   margin-top: 0;
 }
 
+#result.success {
+  border: 2px dotted greenyellow;
+}
+
 #result.error {
-  border: 2px dotted darkred;
-  margin: 0 0 15px 0;
-  padding: 10px;
-  background: pink;
+  border: 2px dotted pink;
 }
 
 input::file-selector-button,
@@ -175,8 +185,8 @@ textarea {
   border-radius: 5px;
   background-color: var(--input-color);
   height: fit-content;
-  color: var(--txt-color);
   border: 1px solid var(--out-color);
+  color: var(--txt-color);
 }
 
 input[type="file"] {
