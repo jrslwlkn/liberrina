@@ -9,7 +9,8 @@ select
     sentence_count
 from
     docs
-where user_id = @user_id;
+where
+    user_id = @user_id;
 
 -- name: GetAllLangs :many
 select
@@ -24,14 +25,14 @@ select
     name
 from
     langs
-where user_id = @user_id;
+where
+    user_id = @user_id;
 
--- name: GetDoc :one
+-- name: GetDocMeta :one
 select
     doc_id,
     title,
     author,
-    body,
     added_at,
     term_count,
     terms_new,
@@ -40,6 +41,19 @@ from
     docs
 where
     doc_id = @id;
+
+-- name: GetDocBody :many
+select
+    c.value,
+    c.suffix,
+    t.term_level_id,
+    t.translation
+from
+    chunks c
+    left join terms t on c.value = t.value
+where
+    c.doc_id = @doc_id
+    and t.user_id = @user_id;
 
 -- name: AddLang :one
 insert into

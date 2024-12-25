@@ -86,21 +86,30 @@ func handleDoc(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(r.URL.Path, "/")
 	log.Println("requested doc path:", r.URL.Path)
 	if len(parts) != 3 {
+		log.Println("error: invalid doc path")
 		render(w, "404", nil)
 		return
 	}
 	id, err := strconv.ParseInt(parts[2], 10, 64)
 	if err != nil {
+		log.Println("error: invalid doc id")
 		render(w, "404", nil)
 		return
 	}
-	doc, err := query.GetDoc(ctx, id)
+	doc, err := query.GetDocMeta(ctx, id)
 	if err != nil {
+		log.Println("db error when retrieving doc meta:", err.Error())
 		render(w, "404", nil)
 		return
 	}
-	log.Println("rendering doc", doc.DocID)
-	render(w, "doc", doc)
+	chunks, err := query.GetDocBody(ctx, queries.GetDocBodyParams{DocID: doc.DocID, UserID: 0})
+	if err != nil {
+		log.Println("db error when retrieving doc body:", err.Error())
+		render(w, "404", nil)
+		return
+	}
+	log.Println("rendering doc", doc.DocID, "-", len(chunks), "chunks")
+	render(w, "doc", DocData{doc, chunks})
 }
 
 func handleAddLang(w http.ResponseWriter, r *http.Request) {

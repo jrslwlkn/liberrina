@@ -15,6 +15,7 @@
         border: 1px solid var(--out-color);
         border-radius: 5px;
         filter: brightness(125%);
+        max-width: 400px;
     }
 
     article {
@@ -22,6 +23,21 @@
         line-height: 2;
         font-size: 1.2rem;
         cursor: default;
+    }
+
+    article span[data-level="1"] {
+        background-color: pink;
+        color: black;
+    }
+
+    article span[data-level="2"] {
+        background-color: lightblue;
+        color: black;
+    }
+
+    article span[data-level="3"] {
+        background-color: lightseagreen;
+        color: black;
     }
 
     nav {
@@ -65,7 +81,14 @@
             <h1>{{ .Author }}: {{ .Title }}</h1>
             {{ end }}
         </center>
-        <pre style="white-space: break-spaces;">{{ .Body }}</pre>
+        <pre style="white-space: break-spaces;">
+             {{- range $_, $chunk := .Chunks -}}
+             <span data-level="{{ $chunk.TermLevelID.Int64 }}" data-translation="{{ $chunk.Translation }}">
+                {{- $chunk.Value -}}
+            </span>
+            {{- $chunk.Suffix -}}
+            {{- end -}}
+        </pre>
     </article>
 </main>
 
@@ -82,13 +105,15 @@
     }
 
     function openPopup(e) {
+        if (e.target.id == "popup")
+            return;
         if (!getSelectionString())
             return closePopup();
         const newId = setTimeout(() => {
             if (popupId == newId && getSelectionString()) {
                 const { x, y } = getSelectionCoords();
                 popup.style.left = x + 'px';
-                popup.style.top =  window.pageYOffset  + y + Number.parseInt(article.style.fontSize) + 10 + 'px';
+                popup.style.top = window.pageYOffset + y + Number.parseInt(article.style.fontSize) + 10 + 'px';
                 popup.style.display = 'block';
                 popup.innerText = getSelectionString();
             }
@@ -109,7 +134,7 @@
     }
 
     function click2selectWord(e) {
-        if (getSelectionString()) {
+        if (getSelectionString() || e.target.id == "popup") {
             return;
         }
         const selection = window.getSelection();

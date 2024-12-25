@@ -7,6 +7,7 @@ package queries
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -226,12 +227,65 @@ func (q *Queries) GetAllLangs(ctx context.Context) ([]LangsDim, error) {
 	return items, nil
 }
 
-const getDoc = `-- name: GetDoc :one
+const getDocBody = `-- name: GetDocBody :many
+select
+    c.value,
+    c.suffix,
+    t.term_level_id,
+    t.translation
+from
+    chunks c
+    left join terms t on c.value = t.value
+where
+    c.doc_id = ?1
+    and t.user_id = ?2
+`
+
+type GetDocBodyParams struct {
+	DocID  int64
+	UserID int64
+}
+
+type GetDocBodyRow struct {
+	Value       string
+	Suffix      string
+	TermLevelID sql.NullInt64
+	Translation string
+}
+
+func (q *Queries) GetDocBody(ctx context.Context, arg GetDocBodyParams) ([]GetDocBodyRow, error) {
+	rows, err := q.db.QueryContext(ctx, getDocBody, arg.DocID, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetDocBodyRow
+	for rows.Next() {
+		var i GetDocBodyRow
+		if err := rows.Scan(
+			&i.Value,
+			&i.Suffix,
+			&i.TermLevelID,
+			&i.Translation,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDocMeta = `-- name: GetDocMeta :one
 select
     doc_id,
     title,
     author,
-    body,
     added_at,
     term_count,
     terms_new,
@@ -242,25 +296,23 @@ where
     doc_id = ?1
 `
 
-type GetDocRow struct {
+type GetDocMetaRow struct {
 	DocID         int64
 	Title         string
 	Author        string
-	Body          string
 	AddedAt       time.Time
 	TermCount     int64
 	TermsNew      int64
 	SentenceCount int64
 }
 
-func (q *Queries) GetDoc(ctx context.Context, id int64) (GetDocRow, error) {
-	row := q.db.QueryRowContext(ctx, getDoc, id)
-	var i GetDocRow
+func (q *Queries) GetDocMeta(ctx context.Context, id int64) (GetDocMetaRow, error) {
+	row := q.db.QueryRowContext(ctx, getDocMeta, id)
+	var i GetDocMetaRow
 	err := row.Scan(
 		&i.DocID,
 		&i.Title,
 		&i.Author,
-		&i.Body,
 		&i.AddedAt,
 		&i.TermCount,
 		&i.TermsNew,
@@ -280,7 +332,8 @@ select
     sentence_count
 from
     docs
-where user_id = ?1
+where
+    user_id = ?1
 `
 
 type GetDocsRow struct {
@@ -330,7 +383,8 @@ select
     name
 from
     langs
-where user_id = ?1
+where
+    user_id = ?1
 `
 
 type GetLangsRow struct {

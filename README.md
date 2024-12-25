@@ -28,29 +28,40 @@
 1. Install [sqlc](https://docs.sqlc.dev/en/latest/overview/install.html).
 
 1. Run migrations:
-    ```
+
+    ```bash
     cd db
     goose -dir migrations sqlite3 ../app.db up
     ```
+
 1. Generate Go from SQL queries (if queries are added/updated in `db/queries.sql`)
 
-    ```
+    ```bash
     cd db
     sqlc generate
     ```
 
-1. Start dev server:
+1. Create a SQL migration (if needed):
+
+    ```bash
+    cd db
+    goose -dir migrations sqlite3 ../app.db create migration_name sql
     ```
+
+1. Start dev server:
+
+    ```bash
     go run *.go
     ```
 
     Or use hot reloading with [entr](https://github.com/eradman/entr):
-	```
+
+    ```bash
     find . -name "*.go" | entr -r go run . 
     ```
 
     Or use hot reloading with [air](https://github.com/air-verse/air):
 
-    ```
+    ```bash
     air
     ```
