@@ -11,6 +11,6 @@ values
 -- +goose StatementEnd
 -- +goose Down
 -- +goose StatementBegin
-truncate table term_levels;
+delete from term_levels;
 
 -- +goose StatementEnd
