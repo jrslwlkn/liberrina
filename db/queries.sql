@@ -26,11 +26,12 @@ from
     langs
 where user_id = @user_id;
 
--- name: GetDocByID :one
+-- name: GetDoc :one
 select
     doc_id,
     title,
     author,
+    body,
     added_at,
     term_count,
     terms_new,

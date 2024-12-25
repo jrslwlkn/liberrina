@@ -89,12 +89,12 @@ func handleDoc(w http.ResponseWriter, r *http.Request) {
 		render(w, "404", nil)
 		return
 	}
-	val, err := strconv.ParseInt(parts[2], 10, 64)
+	id, err := strconv.ParseInt(parts[2], 10, 64)
 	if err != nil {
 		render(w, "404", nil)
 		return
 	}
-	doc, err := query.GetDocByID(ctx, val)
+	doc, err := query.GetDoc(ctx, id)
 	if err != nil {
 		render(w, "404", nil)
 		return
@@ -217,6 +217,7 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 		docID, err := qtx.AddDoc(ctx, queries.AddDocParams{
 			Title:  form.Get("title"),
 			Author: form.Get("author"),
+			Body:   body,
 			Notes:  form.Get("notes"),
 			LangID: int64(langID),
 			UserID: 0, // TODO: add users

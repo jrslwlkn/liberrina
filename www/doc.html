@@ -8,39 +8,41 @@
     #popup {
         position: absolute;
         display: none;
-        background: whitesmoke;
+        background: var(--bg-color);
         padding: 10px;
         margin: 0;
-        box-shadow: 3px 3px 3px lightgrey;
-        border: none;
+        box-shadow: 2px 2px var(--txt-color);
+        border: 1px solid var(--out-color);
+        border-radius: 5px;
+        filter: brightness(125%);
     }
 
     article {
         max-width: 800px;
-        margin: 20px auto;
         line-height: 2;
         font-size: 1.2rem;
         cursor: default;
-        padding: 0 20px;
     }
 
     nav {
         display: flex;
-        margin: 20px;
         justify-content: end;
     }
 
     input[type=number] {
-        width: 3rem;
+        width: 4rem;
     }
 
     .control {
-        border: 1px solid lightgrey;
+        border: 1px solid var(--out-color);
         padding: 5px;
+        border-radius: 5px;
+        position: absolute;
+        top: 15px;
     }
 </style>
 
-<body>
+<main>
     <dialog id="popup">
     </dialog>
 
@@ -56,16 +58,22 @@
     </nav>
 
     <article>
-        <h3>{{.Author}}: {{.Title}}</h3>
-        <pre>{{.Body}}</pre>
+        <center>
+            {{ if eq .Author ""}}
+            <h1>{{ .Title }}</h1>
+            {{ else }}
+            <h1>{{ .Author }}: {{ .Title }}</h1>
+            {{ end }}
+        </center>
+        <pre style="white-space: break-spaces;">{{ .Body }}</pre>
     </article>
-</body>
+</main>
 
 <script>
-    let popupId = null;
-    const popup = document.getElementById("popup");
-    const textSizeInput = document.querySelector("input[name=text_font_size]");
-    const article = document.querySelector("article");
+    var popupId = null;
+    var popup = document.getElementById("popup");
+    var textSizeInput = document.querySelector("input[name=text_font_size]");
+    var article = document.querySelector("article");
 
     handleFontSizeChange(localStorage.getItem("text_font_size") ?? "14");
 
@@ -75,7 +83,7 @@
 
     function openPopup(e) {
         if (!getSelectionString())
-            return;
+            return closePopup();
         const newId = setTimeout(() => {
             if (popupId == newId && getSelectionString()) {
                 const { x, y } = getSelectionCoords();

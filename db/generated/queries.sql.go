@@ -226,11 +226,12 @@ func (q *Queries) GetAllLangs(ctx context.Context) ([]LangsDim, error) {
 	return items, nil
 }
 
-const getDocByID = `-- name: GetDocByID :one
+const getDoc = `-- name: GetDoc :one
 select
     doc_id,
     title,
     author,
+    body,
     added_at,
     term_count,
     terms_new,
@@ -241,23 +242,25 @@ where
     doc_id = ?1
 `
 
-type GetDocByIDRow struct {
+type GetDocRow struct {
 	DocID         int64
 	Title         string
 	Author        string
+	Body          string
 	AddedAt       time.Time
 	TermCount     int64
 	TermsNew      int64
 	SentenceCount int64
 }
 
-func (q *Queries) GetDocByID(ctx context.Context, id int64) (GetDocByIDRow, error) {
-	row := q.db.QueryRowContext(ctx, getDocByID, id)
-	var i GetDocByIDRow
+func (q *Queries) GetDoc(ctx context.Context, id int64) (GetDocRow, error) {
+	row := q.db.QueryRowContext(ctx, getDoc, id)
+	var i GetDocRow
 	err := row.Scan(
 		&i.DocID,
 		&i.Title,
 		&i.Author,
+		&i.Body,
 		&i.AddedAt,
 		&i.TermCount,
 		&i.TermsNew,
