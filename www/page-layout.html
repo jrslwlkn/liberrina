@@ -11,11 +11,9 @@
       <link rel="icon"
             type="image/x-icon"
             href="/www/favicon.ico">
-      <script src="https://unpkg.com/htmx.org@1.9.4"
-              integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV"
-              crossorigin="anonymous"></script>
+      <script src="/www/htmx.js"></script>
       <link rel="stylesheet"
-            href="https://necolas.github.io/normalize.css/8.0.1/normalize.css">
+            href="/www/normalize.css">
       <link rel="stylesheet"
             href="/www/styles.css">
       {{block "in-head" .}}
@@ -25,7 +23,9 @@
 <body hx-boost="true">
       <select id="theme"
               onchange="setTheme(this)">
-            <option hidden disabled selected></option>
+            <option hidden
+                    disabled
+                    selected></option>
             <option value="light">🌞</option>
             <option value="dark">🌚</option>
       </select>
