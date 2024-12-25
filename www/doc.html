@@ -88,7 +88,7 @@
             if (popupId == newId && getSelectionString()) {
                 const { x, y } = getSelectionCoords();
                 popup.style.left = x + 'px';
-                popup.style.top = y + Number.parseInt(article.style.fontSize) + 10 + 'px';
+                popup.style.top =  window.pageYOffset  + y + Number.parseInt(article.style.fontSize) + 10 + 'px';
                 popup.style.display = 'block';
                 popup.innerText = getSelectionString();
             }
