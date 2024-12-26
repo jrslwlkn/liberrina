@@ -20,7 +20,6 @@ type Doc struct {
 	DocID         int64
 	Title         string
 	Author        string
-	Body          string
 	Notes         string
 	LangID        int64
 	UserID        int64

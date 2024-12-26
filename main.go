@@ -226,7 +226,6 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 		docID, err := qtx.AddDoc(ctx, queries.AddDocParams{
 			Title:  form.Get("title"),
 			Author: form.Get("author"),
-			Body:   body,
 			Notes:  form.Get("notes"),
 			LangID: int64(langID),
 			UserID: 0, // TODO: add users

@@ -9,7 +9,6 @@
       hx-target="this">
     <fieldset>
         <legend>Add new language</legend>
-        <div ID="result"></div>
         <div class="field">
             <label for="name">
                 Friendly name:
@@ -20,11 +19,11 @@
                    required>
         </div>
         <div class="field">
-            <label for="from_ID">
-                Study language: 
+            <label for="from_id">
+                Study language:
                 <span class="desc">The source language that text should be translated from</span>
             </label>
-            <select name="from_ID"
+            <select name="from_id"
                     required>
                 <option value>Select one...</option>
                 {{range .}}
@@ -33,11 +32,11 @@
             </select>
         </div>
         <div class="field">
-            <label for="to_ID">
-                Your language: 
+            <label for="to_id">
+                Your language:
                 <span class="desc">The target language that text should be translated into</span>
             </label>
-            <select name="to_ID"
+            <select name="to_id"
                     required>
                 <option value>Select one...</option>
                 {{range .}}
@@ -47,18 +46,18 @@
         </div>
         <div class="field">
             <label for="quick_lookup_uri">
-                Quick term lookup URI: 
+                Quick term lookup URI:
                 <span class="desc">This value is used for inline lookup of selected text</span>
             </label>
             <input type="text"
                    style="font-family: monospace;"
-                   name="quick_lookup_uri"
-                   required>
+                   name="quick_lookup_uri">
         </div>
         <div class="field">
             <label for="lookup_uri_1">
-                First dictionary lookup URI: 
-                <span class="desc">Use <b><code>the_term</code></b> placeholder for the term to look-up like `<code>https://translate.google.com/?sl=la&tl=en&text=<b>the_term</b>&op=translate`</code></span>
+                First dictionary lookup URI:
+                <span class="desc">Use <b><code>the_term</code></b> placeholder for the term to look-up like
+                    `<code>https://translate.google.com/?sl=la&tl=en&text=<b>the_term</b>&op=translate`</code></span>
             </label>
             <input type="text"
                    style="font-family: monospace;"
@@ -66,7 +65,7 @@
         </div>
         <div class="field">
             <label for="lookup_uri_2">
-                Second dictionary lookup URI: 
+                Second dictionary lookup URI:
                 <span class="desc">Same as previous, just an extra one</span>
             </label>
             <input type="text"
@@ -86,8 +85,9 @@
         </div>
         <div class="field">
             <label for="sentence_sep">
-                Sentence delimiter pattern: 
-                <span class="desc">Regex to split text in sentences; usually punctuation marks like period, question mark, exclamation mark etc.
+                Sentence delimiter pattern:
+                <span class="desc">Regex to split text in sentences; usually punctuation marks like period, question
+                    mark, exclamation mark etc.
             </label>
             <input type="text"
                    name="sentence_sep"

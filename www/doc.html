@@ -93,6 +93,13 @@
 </main>
 
 <script>
+    //     const popupTemplate = `
+    // {term}
+    // <hr>
+    // {translation1}
+    // <hr>
+    // {translation2}
+    // `;
     var popupId = null;
     var popup = document.getElementById("popup");
     var textSizeInput = document.querySelector("input[name=text_font_size]");
@@ -104,26 +111,42 @@
         return document.getSelection().toString().trim();
     }
 
-    function openPopup(e) {
+    async function openPopup(e) {
         if (e.target.id == "popup")
             return;
-        if (!getSelectionString())
+        const selection = getSelectionString();
+        if (!selection)
             return closePopup();
-        const newId = setTimeout(() => {
-            if (popupId == newId && getSelectionString()) {
+        const newId = setTimeout(async () => {
+            if (popupId == newId && selection) {
                 const { x, y } = getSelectionCoords();
                 popup.style.left = x + 'px';
                 popup.style.top = window.pageYOffset + y + Number.parseInt(article.style.fontSize) + 10 + 'px';
+                let translation = e.target.getAttribute("data-translation");
+                if (!translation) {
+                    // TODO: use lookup URL(s) to find translations
+                    translation = await getTranslation(selection);
+                }
+                translation = translation || "Translation not found 😭";
+                popup.innerHTML = `<div style='max-width: 400px; whitespace: break-spaces;'>${selection}<hr style='border-top: 1px solid var(--out-color)'>${translation}</div>`;
                 popup.style.display = 'block';
-                popup.innerText = getSelectionString();
             }
             clearTimeout(newId);
-        }, 350);
+        }, 0);
         popupId = newId;
+    }
+
+    async function getTranslation(term) {
+        // TODO: change to use user-defined URI lookups
+        const result = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl={{ .FromLangID }}&tl={{ .ToLangID }}&dt=t&dt=bd&dj=1&q=${encodeURIComponent(term)}`).then(r => r.json());
+        if (!result || !result.dict)
+            return null;
+        return result.dict.map(x => `<em>${x.pos}</em>: ${x.terms.join(", ")}`).join("<br><br>");
     }
 
     function closePopup() {
         popup.style.display = 'none';
+        popup.innerHTML = '';
         return true;
     }
 

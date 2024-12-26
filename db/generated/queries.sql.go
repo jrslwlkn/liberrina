@@ -45,7 +45,6 @@ insert into
     docs(
         title,
         author,
-        body,
         notes,
         lang_id,
         user_id,
@@ -61,7 +60,6 @@ values
         ?3,
         ?4,
         ?5,
-        ?6,
         datetime(),
         0,
         0,
@@ -72,7 +70,6 @@ values
 type AddDocParams struct {
 	Title  string
 	Author string
-	Body   string
 	Notes  string
 	LangID int64
 	UserID int64
@@ -82,7 +79,6 @@ func (q *Queries) AddDoc(ctx context.Context, arg AddDocParams) (int64, error) {
 	row := q.db.QueryRowContext(ctx, addDoc,
 		arg.Title,
 		arg.Author,
-		arg.Body,
 		arg.Notes,
 		arg.LangID,
 		arg.UserID,
@@ -286,24 +282,41 @@ select
     doc_id,
     title,
     author,
-    added_at,
+    notes,
+    d.added_at,
     term_count,
+    sentence_count,
     terms_new,
-    sentence_count
+    from_id from_lang_id,
+    to_id to_lang_id,
+    quick_lookup_uri,
+    lookup_uri_1,
+    lookup_uri_2,
+    chars_pattern,
+    sentence_sep
 from
-    docs
+    docs d
+    join langs l on d.lang_id = l.lang_id
 where
     doc_id = ?1
 `
 
 type GetDocMetaRow struct {
-	DocID         int64
-	Title         string
-	Author        string
-	AddedAt       time.Time
-	TermCount     int64
-	TermsNew      int64
-	SentenceCount int64
+	DocID          int64
+	Title          string
+	Author         string
+	Notes          string
+	AddedAt        time.Time
+	TermCount      int64
+	SentenceCount  int64
+	TermsNew       int64
+	FromLangID     string
+	ToLangID       string
+	QuickLookupUri string
+	LookupUri1     string
+	LookupUri2     string
+	CharsPattern   string
+	SentenceSep    string
 }
 
 func (q *Queries) GetDocMeta(ctx context.Context, id int64) (GetDocMetaRow, error) {
@@ -313,10 +326,18 @@ func (q *Queries) GetDocMeta(ctx context.Context, id int64) (GetDocMetaRow, erro
 		&i.DocID,
 		&i.Title,
 		&i.Author,
+		&i.Notes,
 		&i.AddedAt,
 		&i.TermCount,
-		&i.TermsNew,
 		&i.SentenceCount,
+		&i.TermsNew,
+		&i.FromLangID,
+		&i.ToLangID,
+		&i.QuickLookupUri,
+		&i.LookupUri1,
+		&i.LookupUri2,
+		&i.CharsPattern,
+		&i.SentenceSep,
 	)
 	return i, err
 }
