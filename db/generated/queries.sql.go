@@ -173,14 +173,8 @@ where
         from
             terms
         where
-            user_id = (
-                select
-                    user_id
-                from
-                    docs
-                where
-                    doc_id = d.doc_id
-            )
+            lang_id = (select lang_id from docs where doc_id = d.doc_id)
+            and user_id = (select user_id from docs where doc_id = d.doc_id)
     )
 group by
     value
@@ -492,7 +486,7 @@ update
     terms
 set 
     translation = case when ?1 = '' then translation else ?1 end, 
-    term_level_id = case when ?2 = '' then term_level_id else ?2 end
+    term_level_id = case when ?2 = 0 then term_level_id else ?2 end
 where
     term_id = ?3
 `

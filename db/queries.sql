@@ -180,7 +180,7 @@ update
     terms
 set 
     translation = case when @translation = '' then translation else @translation end, 
-    term_level_id = case when @level_id = '' then term_level_id else @level_id end
+    term_level_id = case when @level_id = 0 then term_level_id else @level_id end
 where
     term_id = @term_id;
 

@@ -15,18 +15,17 @@
         border: 1px solid var(--out-color);
         border-radius: 5px;
         filter: brightness(125%);
-        min-width: 200px;
-        max-width: 400px;
+        min-width: 300px;
+        max-width: 500px;
     }
 
     #picker .item,
     #picker button {
-        padding: 5px;
+        padding: 8px 16px;
         border: 1px solid var(--out-color);
         display: inline-block;
         border-radius: 5px;
         margin: 3px auto;
-        /* height: 2.5rem; */
     }
 
     article {
@@ -91,8 +90,11 @@
                 </div>
             </div>
             <div style="flex-grow: 1;"></div>
-            <button type="button" style="display: flex; justify-content: center; max-width: 2rem;"
-                title="Save translation">+</button>
+            <div id="indicator" style="margin: auto"></div>
+            <div style="flex-grow: 1;"></div>
+            <button type="button" style="display: flex; 
+                    justify-content: center; max-width: 2rem;" title="Save translation"
+                onmousedown="saveTranslation()">+</button>
         </div>
     </dialog>
 
@@ -148,7 +150,7 @@
             return closePopup();
         const newId = setTimeout(async () => {
             if (popupId == newId && selection) {
-                const { x, y } = getSelectionCoords();
+                const {x, y} = getSelectionCoords();
                 popup.style.left = x + 'px';
                 popup.style.top = window.pageYOffset + y + Number.parseInt(article.style.fontSize) + 10 + 'px';
                 let translation = e.target.getAttribute("data-translation");
@@ -224,23 +226,36 @@
         range.collapse(true);
         let rects = range.getClientRects();
         let rect = rects[0];
-        return { x: rect.x, y: rect.y };
+        return {x: rect.x, y: rect.y};
     }
 
     function isInPopup(e) {
         return popup.contains(e.target);
     }
 
+    function saveTranslation() {
+        if (!selectionSpan) return;
+        const translation = document.getElementById('translation').innerHTML;
+        selectionSpan.dataset['translation'] = translation == TRANSLATION_NOT_FOUND ? "" : translation;
+        fetch(new Request("/term", {method: "POST", body: JSON.stringify({term: term.innerText, level: 0, translation, docID})}))
+            .then(r => flashIndicator(r.ok ? "✅" : "❌"))
+    }
+
+    function flashIndicator(value) {
+        document.getElementById("indicator").innerText = value;
+        setTimeout(() => {
+            document.getElementById("indicator").innerText = "";
+        }, 500);
+    }
+
     document.addEventListener('mouseup', openPopup);
     document.querySelectorAll('input[type="radio"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
-            if (!selectionSpan)
-                return;
+            if (!selectionSpan) return;
             const level = Number(e.target.defaultValue);
-            const translation = document.getElementById('translation').innerHTML;
             selectionSpan.dataset['level'] = level;
-            selectionSpan.dataset['translation'] = translation == TRANSLATION_NOT_FOUND ? "" : translation;
-            fetch(new Request("/term", {method: "POST", body: JSON.stringify({term: term.innerText, level, translation, docID})})).then(r => console.log(r.status));
+            fetch(new Request("/term", {method: "POST", body: JSON.stringify({term: term.innerText, level, translation: "", docID})}))
+                .then(r => flashIndicator(r.ok ? "✅" : "❌"))
         });
     });
     document.addEventListener('keydown', e => e.key == "Escape" && closePopup() && document.getSelection().empty());
