@@ -149,7 +149,7 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			render(w, "db-error", err.Error())
 		} else {
 			log.Println("added lang", addedID)
-			render(w, "success", nil)
+			render(w, "success", addedID)
 		}
 	}
 }

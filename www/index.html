@@ -6,8 +6,7 @@
 
 <center>
     <h1>Liberrїna</h1>
-    <img src="www/logo.jpg"
-         style="width: 200px; border-radius: 5px;">
+    <img src="www/logo.jpg" style="width: 200px; border-radius: 5px;">
     <h3>Lean a language by reading in it</h3>
 </center>
 
@@ -15,14 +14,12 @@
     <section>
         <div class="title">
             <h3>Documents</h3>
-            <a href="/add-doc"
-               class="square-button"
-               title="Add new document">+
+            <a href="/add-doc" class="square-button" title="Add new document">+
             </a>
         </div>
         <ul>
             {{range .Docs}}
-            <li><a href="/doc/{{.DocID}}"><b>{{.Title}}</b> by <i>{{.Author}}</i></a></li>
+            <li><a href="/doc/{{.DocID}}" hx-boost="false"><b>{{.Title}}</b> by <i>{{.Author}}</i></a></li>
             {{end}}
         </ul>
     </section>
@@ -30,9 +27,7 @@
     <section>
         <div class="title">
             <h3>Language Pairs</h3>
-            <a href="/add-lang"
-               class="square-button"
-               title="Add new language pair">+
+            <a href="/add-lang" class="square-button" title="Add new language pair">+
             </a>
         </div>
         <ul>
