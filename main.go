@@ -66,7 +66,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	docs, err := query.GetDocs(ctx, 0) // TODO: add users
 	if err != nil {
 		render(w, "db-error", err.Error())
-		log.Println("db error when trying to get docs in index:", err.Error())
+		log.Println("db error when trying to get docs in index", err.Error())
 		return
 	}
 	for i := range docs {
@@ -77,7 +77,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	langs, err := query.GetLangs(ctx, 0) // TODO: add users
 	if err != nil {
 		render(w, "db-error", err.Error())
-		log.Println("db error when trying to get langs in index:", err.Error())
+		log.Println("db error when trying to get langs in index", err.Error())
 		return
 	}
 	log.Println("rendering index")
@@ -86,7 +86,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
 func handleDoc(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(r.URL.Path, "/")
-	log.Println("requested doc path:", r.URL.Path)
+	log.Println("requested doc path", r.URL.Path)
 	if len(parts) != 3 {
 		log.Println("error: invalid doc path")
 		render(w, "404", nil)
@@ -100,13 +100,13 @@ func handleDoc(w http.ResponseWriter, r *http.Request) {
 	}
 	doc, err := query.GetDocMeta(ctx, id)
 	if err != nil {
-		log.Println("db error when retrieving doc meta:", err.Error())
+		log.Println("db error when retrieving doc meta", err.Error())
 		render(w, "404", nil)
 		return
 	}
 	chunks, err := query.GetDocBody(ctx, queries.GetDocBodyParams{DocID: doc.DocID, UserID: 0})
 	if err != nil {
-		log.Println("db error when retrieving doc body:", err.Error())
+		log.Println("db error when retrieving doc body", err.Error())
 		render(w, "404", nil)
 		return
 	}
@@ -118,7 +118,7 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		langs, err := query.GetAllLangs(ctx)
 		if err != nil {
-			log.Println("db error when trying to get all langs (adding new):", err.Error())
+			log.Println("db error when trying to get all langs (adding new)", err.Error())
 			render(w, "db-error", err.Error())
 		}
 		render(w, "add-lang", langs)
@@ -145,7 +145,7 @@ func handleAddLang(w http.ResponseWriter, r *http.Request) {
 			UserID:         0, // TODO
 		})
 		if err != nil {
-			log.Println("db error when adding lang:", err.Error())
+			log.Println("db error when adding lang", err.Error())
 			render(w, "db-error", err.Error())
 		} else {
 			log.Println("added lang", addedID)
@@ -158,7 +158,7 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		langs, err := query.GetLangs(ctx, 0)
 		if err != nil {
-			log.Println("db error when trying to get langs (adding doc):", err.Error())
+			log.Println("db error when trying to get langs (adding doc)", err.Error())
 			render(w, "db-error", err.Error())
 		}
 		render(w, "add-doc", langs)
@@ -170,7 +170,7 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 		if body == "" {
 			file, _, err := r.FormFile("doc_file")
 			if err != nil {
-				log.Println("error when getting form field doc_file:", err.Error())
+				log.Println("error when getting form field doc_file", err.Error())
 				render(w, "app-error", err.Error())
 				return
 			}
@@ -187,13 +187,13 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 
 			reader, err := charset.NewReaderLabel(enc, file)
 			if err != nil {
-				log.Println("error when creating new reader label for charset (adding doc):", err.Error())
+				log.Println("error when creating new reader label for charset (adding doc)", err.Error())
 				render(w, "app-error", err.Error())
 				return
 			}
 			fileBytes, err := io.ReadAll(reader)
 			if err != nil {
-				log.Println("error when reading full body (adding doc):", err.Error())
+				log.Println("error when reading full body (adding doc)", err.Error())
 				render(w, "app-error", err.Error())
 				return
 			}
@@ -210,7 +210,7 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		tx, err := db.Begin()
 		if err != nil {
-			log.Println("db error when trying to start a transaction:", err.Error())
+			log.Println("db error when trying to start a transaction", err.Error())
 			render(w, "db-error", err.Error())
 			return
 		}
@@ -220,7 +220,7 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 
 		langID, err := strconv.Atoi(form.Get("lang_id"))
 		if err != nil {
-			log.Println("error when trying to get int value lang_id from from (adding doc):", err.Error())
+			log.Println("error when trying to get int value lang_id from from (adding doc)", err.Error())
 			render(w, "app-error", err.Error())
 			return
 		}
@@ -233,7 +233,7 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 			UserID: 0, // TODO: add users
 		})
 		if err != nil {
-			log.Println("db error when trying to add doc:", err.Error())
+			log.Println("db error when trying to add doc", err.Error())
 			render(w, "db-error", err.Error())
 			return
 		}
@@ -250,7 +250,7 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 					if cur.Value != "" || cur.Suffix != "" {
 						err := qtx.AddChunk(ctx, cur)
 						if err != nil {
-							log.Println("db error when trying to add chunk:", err.Error())
+							log.Println("db error when trying to add chunk", err.Error())
 							render(w, "db-error", err.Error())
 							return
 						}
@@ -282,7 +282,7 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 		}
 		err = qtx.AddChunk(ctx, cur)
 		if err != nil {
-			log.Println("db error when trying to add chunk at the very end:", err.Error())
+			log.Println("db error when trying to add chunk at the very end", err.Error())
 			render(w, "db-error", err.Error())
 			return
 		}
@@ -294,13 +294,13 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 
 		err = qtx.AddTerms(ctx, docID)
 		if err != nil {
-			log.Println("db error when adding terms (adding doc):", err.Error())
+			log.Println("db error when adding terms (adding doc)", err.Error())
 			render(w, "db-error", err.Error())
 			return
 		}
 
 		if err := tx.Commit(); err != nil {
-			log.Println("db error when trying to commit transaction for adding doc:", err.Error())
+			log.Println("db error when trying to commit transaction for adding doc", err.Error())
 			render(w, "db-error", err.Error())
 			return
 		}
