@@ -7,7 +7,6 @@ package queries
 
 import (
 	"context"
-	"database/sql"
 	"time"
 )
 
@@ -157,7 +156,7 @@ insert into
         added_at
     )
 select
-    value,
+    c.value,
     '',
     1,
     d.lang_id,
@@ -168,7 +167,7 @@ from
     join docs d on c.doc_id = d.doc_id
 where
     d.doc_id = ?1
-    and not exists (
+    and c.value not in (
         select
             value
         from
@@ -227,30 +226,30 @@ const getDocBody = `-- name: GetDocBody :many
 select
     c.value,
     c.suffix,
-    t.term_level_id,
-    t.translation
+    case when t.term_level_id is null then 1 else t.term_level_id end as term_level_id,
+    case when t.translation is null then '' else t.translation end as translation
 from
     chunks c
-    left join terms t on c.value = t.value
+    left join terms t 
+        on c.value = t.value and t.user_id = ?1
 where
-    c.doc_id = ?1
-    and t.user_id = ?2
+    c.doc_id = ?2
 `
 
 type GetDocBodyParams struct {
-	DocID  int64
 	UserID int64
+	DocID  int64
 }
 
 type GetDocBodyRow struct {
 	Value       string
 	Suffix      string
-	TermLevelID sql.NullInt64
-	Translation string
+	TermLevelID interface{}
+	Translation interface{}
 }
 
 func (q *Queries) GetDocBody(ctx context.Context, arg GetDocBodyParams) ([]GetDocBodyRow, error) {
-	rows, err := q.db.QueryContext(ctx, getDocBody, arg.DocID, arg.UserID)
+	rows, err := q.db.QueryContext(ctx, getDocBody, arg.UserID, arg.DocID)
 	if err != nil {
 		return nil, err
 	}
@@ -436,6 +435,37 @@ func (q *Queries) GetLangs(ctx context.Context, userID int64) ([]GetLangsRow, er
 	return items, nil
 }
 
+const getTerm = `-- name: GetTerm :one
+select
+    term_id,
+    value,
+    translation
+from 
+    terms
+where 
+    value = ?1 
+    and lang_id = (select lang_id from docs d where d.doc_id = ?2) 
+    and user_id = (select user_id from docs d where d.doc_id = ?2)
+`
+
+type GetTermParams struct {
+	Value string
+	DocID int64
+}
+
+type GetTermRow struct {
+	TermID      int64
+	Value       string
+	Translation string
+}
+
+func (q *Queries) GetTerm(ctx context.Context, arg GetTermParams) (GetTermRow, error) {
+	row := q.db.QueryRowContext(ctx, getTerm, arg.Value, arg.DocID)
+	var i GetTermRow
+	err := row.Scan(&i.TermID, &i.Value, &i.Translation)
+	return i, err
+}
+
 const updateDocStats = `-- name: UpdateDocStats :exec
 update
     docs
@@ -454,5 +484,26 @@ type UpdateDocStatsParams struct {
 
 func (q *Queries) UpdateDocStats(ctx context.Context, arg UpdateDocStatsParams) error {
 	_, err := q.db.ExecContext(ctx, updateDocStats, arg.TermCount, arg.SentenceCount, arg.DocID)
+	return err
+}
+
+const updateTerm = `-- name: UpdateTerm :exec
+update 
+    terms
+set 
+    translation = case when ?1 = '' then translation else ?1 end, 
+    term_level_id = case when ?2 = '' then term_level_id else ?2 end
+where
+    term_id = ?3
+`
+
+type UpdateTermParams struct {
+	Translation interface{}
+	LevelID     interface{}
+	TermID      int64
+}
+
+func (q *Queries) UpdateTerm(ctx context.Context, arg UpdateTermParams) error {
+	_, err := q.db.ExecContext(ctx, updateTerm, arg.Translation, arg.LevelID, arg.TermID)
 	return err
 }

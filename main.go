@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"html/template"
 	"io"
 	"log"
@@ -47,6 +48,7 @@ func main() {
 	fs = http.StripPrefix("/www/", http.FileServer(http.Dir("www")))
 	http.HandleFunc("/www/", handleStatic)
 
+	http.HandleFunc("/term", handleUpsertTerm)
 	http.HandleFunc("/add-lang", handleAddLang)
 	http.HandleFunc("/add-doc", handleAddDoc)
 	http.HandleFunc("/doc/", handleDoc)
@@ -308,7 +310,44 @@ func handleAddDoc(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func render(w http.ResponseWriter, name string, data interface{}) {
+func handleUpsertTerm(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			log.Println("malformed request body", err.Error())
+			http.Error(w, "malformed request body", 400)
+			return
+		}
+
+		var term TermData
+		if err := json.Unmarshal(body, &term); err != nil || term.Term == "" {
+			log.Println("malformed request json or term not provided", err.Error())
+			http.Error(w, "malformed request json or term not provided", 400)
+			return
+		}
+
+		res, err := query.GetTerm(ctx, queries.GetTermParams{Value: term.Term, DocID: term.DocID})
+		if err != nil {
+			log.Println("failed to find term", err.Error())
+			http.Error(w, "failed to find term", 500)
+			return
+		}
+
+		err = query.UpdateTerm(ctx, queries.UpdateTermParams{TermID: res.TermID, Translation: term.Translation, LevelID: term.Level})
+		if err != nil {
+			log.Println("failed to update term", err.Error())
+			http.Error(w, "failed to update term", 500)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+		log.Println("updated term", res)
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func render(w http.ResponseWriter, name string, data any) {
 	t, ok := templs[name]
 	if !ok || name == "404" {
 		w.WriteHeader(http.StatusNotFound)

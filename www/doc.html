@@ -15,7 +15,18 @@
         border: 1px solid var(--out-color);
         border-radius: 5px;
         filter: brightness(125%);
+        min-width: 200px;
         max-width: 400px;
+    }
+
+    #picker .item,
+    #picker button {
+        padding: 5px;
+        border: 1px solid var(--out-color);
+        display: inline-block;
+        border-radius: 5px;
+        margin: 3px auto;
+        /* height: 2.5rem; */
     }
 
     article {
@@ -36,7 +47,7 @@
     }
 
     article span[data-level="3"] {
-        background-color: lightseagreen;
+        background-color: lightgreen;
         color: black;
     }
 
@@ -60,16 +71,36 @@
 
 <main>
     <dialog id="popup">
+        <div id="term"></div>
+        <hr style='border-top: 1px solid var(--out-color)'>
+        <div id="translation" contenteditable></div>
+        <hr style='border-top: 1px solid var(--out-color)'>
+        <div id='picker' style="display: flex;">
+            <div style="justify-content: start;">
+                <div class='item' style='background-color: red'>
+                    <input type='radio' name='level' title='New' value=1>
+                </div>
+                <div class='item' style='background-color: blue'>
+                    <input type='radio' name='level' title='Familiar' value=2>
+                </div>
+                <div class='item' style='background-color: green'>
+                    <input type='radio' name='level' title='Learned' value=3>
+                </div>
+                <div class='item'>
+                    <input type='radio' name='level' title='Known' value=4>
+                </div>
+            </div>
+            <div style="flex-grow: 1;"></div>
+            <button type="button" style="display: flex; justify-content: center; max-width: 2rem;"
+                title="Save translation">+</button>
+        </div>
     </dialog>
 
     <nav>
         <div class="control">
             <label for="text_font_size">Font size:</label>
-            <input name="text_font_size"
-                   type="number"
-                   min="9"
-                   max="69"
-                   oninput="handleFontSizeChange(this.valueAsNumber)">
+            <input name="text_font_size" type="number" min="9" max="69"
+                oninput="handleFontSizeChange(this.valueAsNumber)">
         </div>
     </nav>
 
@@ -82,8 +113,8 @@
             {{ end }}
         </center>
         <pre style="white-space: break-spaces;">
-             {{- range $_, $chunk := .Chunks -}}
-             <span data-level="{{ $chunk.TermLevelID.Int64 }}" data-translation="{{ $chunk.Translation }}">
+            {{- range $_, $chunk := .Chunks -}}
+            <span data-level="{{ $chunk.TermLevelID }}" data-translation="{{ $chunk.Translation }}">
                 {{- $chunk.Value -}}
             </span>
             {{- $chunk.Suffix -}}
@@ -93,17 +124,15 @@
 </main>
 
 <script>
-    //     const popupTemplate = `
-    // {term}
-    // <hr>
-    // {translation1}
-    // <hr>
-    // {translation2}
-    // `;
+    var docID = Number(location.pathname.split('/').findLast(x => x != ""));
     var popupId = null;
     var popup = document.getElementById("popup");
     var textSizeInput = document.querySelector("input[name=text_font_size]");
     var article = document.querySelector("article");
+    var term = document.getElementById("term");
+    var selectionSpan = null;
+    var radios = document.querySelectorAll(".item input");
+    var TRANSLATION_NOT_FOUND = "Translation not found 😭";
 
     handleFontSizeChange(localStorage.getItem("text_font_size") ?? "14");
 
@@ -112,7 +141,7 @@
     }
 
     async function openPopup(e) {
-        if (e.target.id == "popup")
+        if (isInPopup(e))
             return;
         const selection = getSelectionString();
         if (!selection)
@@ -123,12 +152,15 @@
                 popup.style.left = x + 'px';
                 popup.style.top = window.pageYOffset + y + Number.parseInt(article.style.fontSize) + 10 + 'px';
                 let translation = e.target.getAttribute("data-translation");
-                if (!translation) {
+                if (!translation && term.innerText != selection) {
                     // TODO: use lookup URL(s) to find translations
                     translation = await getTranslation(selection);
                 }
-                translation = translation || "Translation not found 😭";
-                popup.innerHTML = `<div style='max-width: 400px; whitespace: break-spaces;'>${selection}<hr style='border-top: 1px solid var(--out-color)'>${translation}</div>`;
+                translation = translation || TRANSLATION_NOT_FOUND;
+                term.innerText = selection;
+                document.getElementById("translation").innerHTML = translation;
+                console.log(radios, radios[0].checked, radios[0].value, selectionSpan.getAttribute("data-level"))
+                radios.forEach(r => r.checked = r.getAttribute("value") == selectionSpan.getAttribute("data-level"));
                 popup.style.display = 'block';
             }
             clearTimeout(newId);
@@ -146,8 +178,7 @@
 
     function closePopup() {
         popup.style.display = 'none';
-        popup.innerHTML = '';
-        return true;
+        popupId = null;
     }
 
     function handleFontSizeChange(size) {
@@ -157,11 +188,12 @@
     }
 
     function click2selectWord(e) {
-        if (getSelectionString() || e.target.id == "popup") {
+        if (getSelectionString() || isInPopup(e)) {
             return;
         }
         const selection = window.getSelection();
         const range = selection.getRangeAt(0);
+        selectionSpan = range.commonAncestorContainer.parentElement;
         const node = selection.anchorNode;
         const word_regexp = /^\w*$/; // TODO: use the value from lang_dim table
         // Extend the range backward until it matches word beginning
@@ -180,7 +212,7 @@
         if (!range.toString().match(word_regexp)) {
             range.setEnd(node, range.endOffset - 1);
         }
-        var word = range.toString();
+        const word = range.toString();
         if (word) {
             openPopup(e);
         }
@@ -195,9 +227,24 @@
         return { x: rect.x, y: rect.y };
     }
 
+    function isInPopup(e) {
+        return popup.contains(e.target);
+    }
+
     document.addEventListener('mouseup', openPopup);
+    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (!selectionSpan)
+                return;
+            const level = Number(e.target.defaultValue);
+            const translation = document.getElementById('translation').innerHTML;
+            selectionSpan.dataset['level'] = level;
+            selectionSpan.dataset['translation'] = translation == TRANSLATION_NOT_FOUND ? "" : translation;
+            fetch(new Request("/term", {method: "POST", body: JSON.stringify({term: term.innerText, level, translation, docID})})).then(r => console.log(r.status));
+        });
+    });
     document.addEventListener('keydown', e => e.key == "Escape" && closePopup() && document.getSelection().empty());
-    document.addEventListener('click', e => !popup.contains(e.target) && closePopup());
+    document.addEventListener('click', e => !isInPopup(e) && closePopup());
     document.addEventListener('click', click2selectWord)
 </script>
 

@@ -55,14 +55,14 @@ where
 select
     c.value,
     c.suffix,
-    t.term_level_id,
-    t.translation
+    case when t.term_level_id is null then 1 else t.term_level_id end as term_level_id,
+    case when t.translation is null then '' else t.translation end as translation
 from
     chunks c
-    left join terms t on c.value = t.value
+    left join terms t 
+        on c.value = t.value and t.user_id = @user_id
 where
-    c.doc_id = @doc_id
-    and t.user_id = @user_id;
+    c.doc_id = @doc_id;
 
 -- name: AddLang :one
 insert into
@@ -140,7 +140,7 @@ insert into
         added_at
     )
 select
-    value,
+    c.value,
     '',
     1,
     d.lang_id,
@@ -151,23 +151,38 @@ from
     join docs d on c.doc_id = d.doc_id
 where
     d.doc_id = @doc_id
-    and not exists (
+    and c.value not in (
         select
             value
         from
             terms
         where
-            user_id = (
-                select
-                    user_id
-                from
-                    docs
-                where
-                    doc_id = d.doc_id
-            )
+            lang_id = (select lang_id from docs where doc_id = d.doc_id)
+            and user_id = (select user_id from docs where doc_id = d.doc_id)
     )
 group by
     value;
+
+-- name: GetTerm :one
+select
+    term_id,
+    value,
+    translation
+from 
+    terms
+where 
+    value = @value 
+    and lang_id = (select lang_id from docs d where d.doc_id = @doc_id) 
+    and user_id = (select user_id from docs d where d.doc_id = @doc_id);
+
+-- name: UpdateTerm :exec
+update 
+    terms
+set 
+    translation = case when @translation = '' then translation else @translation end, 
+    term_level_id = case when @level_id = '' then term_level_id else @level_id end
+where
+    term_id = @term_id;
 
 -- name: UpdateDocStats :exec
 update
@@ -177,3 +192,4 @@ set
     sentence_count = @sentence_count
 where
     doc_id = @doc_id;
+    
